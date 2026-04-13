@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Read(//Users/baiyunjun/.claude/plugins/cache/superpowers-marketplace/superpowers/5.0.7/skills/subagent-driven-development/**)",
+      "Bash(xxd /Users/baiyunjun/Documents/AI实验/文档下载器/downloader/sftp_client.py)",
+      "Bash(python3 -c ':*)",
+      "Bash(python3 -m py_compile /Users/baiyunjun/Documents/AI实验/文档下载器/downloader/sftp_client.py)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('/Users/baiyunjun/Documents/AI实验/文档下载器/downloader/ui/download_page.py'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "Bash(pip3 install:*)",
+      "Bash(/Users/baiyunjun/Library/Python/3.9/bin/pyinstaller --onefile --windowed --name \"DengLin下载工具\" --distpath ./dist --workpath ./build --specpath ./build downloader/main.py)"
+    ]
+  }
+}
