@@ -26,10 +26,11 @@ class WizardWindow(QWidget):
         self._password = ""
         self._selected_arch = ""
         self._selected_version = ""
+        self._selected_os = ""
         self._setup_ui()
 
     def _setup_ui(self):
-        self.setWindowTitle("DengLin vLLM 部署包下载工具")
+        self.setWindowTitle("登临部署包下载工具V0.1")
         self.setMinimumSize(700, 560)
         self.resize(700, 560)
 
@@ -153,12 +154,13 @@ class WizardWindow(QWidget):
         self._update_steps(1)
         self.config_page.on_enter(username, password)
 
-    def _go_to_mode_selection(self, arch: str, version: str):
+    def _go_to_mode_selection(self, arch: str, version: str, os_name: str):
         self._selected_arch = arch
         self._selected_version = version
+        self._selected_os = os_name
         self.stack.setCurrentIndex(2)
         self._update_steps(2)
-        self.mode_page.on_enter(arch, version, self._username, self._password)
+        self.mode_page.on_enter(arch, version, os_name, self._username, self._password)
 
     def _go_to_download(self, mode_config: dict):
         self.stack.setCurrentIndex(3)
@@ -169,8 +171,14 @@ class WizardWindow(QWidget):
             self._username,
             self._password,
             mode_config,
+            self._selected_os,
         )
 
     def _go_to_mode_selection_back(self):
         """从下载页返回模式选择页"""
-        self._go_to_mode_selection(self._selected_arch, self._selected_version)
+        self.stack.setCurrentIndex(2)
+        self._update_steps(2)
+        self.mode_page.on_enter(
+            self._selected_arch, self._selected_version,
+            self._selected_os, self._username, self._password,
+        )

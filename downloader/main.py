@@ -36,9 +36,16 @@ def main():
             border-radius: 4px;
             padding: 4px 8px;
             background: white;
+            color: #333333;
         }
         QComboBox::drop-down {
             border: none;
+        }
+        QComboBox QAbstractItemView {
+            background-color: white;
+            color: #333333;
+            selection-background-color: #E8F0FE;
+            selection-color: #333333;
         }
         QPlainTextEdit {
             border: 1px solid #CCCCCC;

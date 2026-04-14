@@ -1,4 +1,4 @@
-"""向导页面 2：架构选择 + 版本选择"""
+"""向导页面 2：架构选择 + 操作系统选择 + 版本选择"""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from downloader.config import OS_OPTIONS
 from downloader.workers import FetchVersionsWorker
 
 
@@ -59,10 +60,49 @@ class ArchCardButton(QPushButton):
         self._update_style()
 
 
-class ConfigPage(QWidget):
-    """配置页：选择架构和版本"""
+class OsCardButton(QPushButton):
+    """操作系统选择卡片按钮"""
 
-    next_clicked = pyqtSignal(str, str)   # arch, version
+    def __init__(self, label: str, desc: str, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(160, 80)
+        self.setCheckable(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.toggled.connect(self._update_style)
+        self._update_style()
+
+    def _update_style(self):
+        if self.isChecked():
+            self.setStyleSheet("""
+                QPushButton {
+                    background-color: #E8F0FE;
+                    border: 2px solid #4A90D9;
+                    border-radius: 8px;
+                    text-align: center;
+                }
+            """)
+        else:
+            self.setStyleSheet("""
+                QPushButton {
+                    background-color: #F8F8F8;
+                    border: 2px solid #DDDDDD;
+                    border-radius: 8px;
+                    text-align: center;
+                }
+                QPushButton:hover {
+                    border-color: #AAAAAA;
+                }
+            """)
+
+    def setChecked(self, checked: bool):
+        super().setChecked(checked)
+        self._update_style()
+
+
+class ConfigPage(QWidget):
+    """配置页：选择架构、操作系统和版本"""
+
+    next_clicked = pyqtSignal(str, str, str)   # arch, version, os
     back_clicked = pyqtSignal()
 
     def __init__(self):
@@ -71,12 +111,13 @@ class ConfigPage(QWidget):
         self._fetch_worker: FetchVersionsWorker | None = None
         self._username = ""
         self._password = ""
+        self._os_btns: dict[str, OsCardButton] = {}
         self._setup_ui()
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(20)
-        layout.setContentsMargins(60, 40, 60, 40)
+        layout.setSpacing(16)
+        layout.setContentsMargins(60, 30, 60, 30)
 
         # 架构选择
         arch_title = QLabel("请选择 CPU 架构")
@@ -104,7 +145,29 @@ class ConfigPage(QWidget):
         arch_layout.addStretch(1)
         layout.addLayout(arch_layout)
 
-        layout.addSpacing(20)
+        layout.addSpacing(12)
+
+        # 操作系统选择
+        os_title = QLabel("请选择操作系统")
+        os_title.setFont(QFont("Microsoft YaHei", 14, QFont.Weight.Bold))
+        layout.addWidget(os_title)
+
+        os_layout = QHBoxLayout()
+        os_layout.setSpacing(16)
+
+        self._os_group = QButtonGroup(self)
+        for os_info in OS_OPTIONS:
+            btn = OsCardButton(os_info["label"], os_info["desc"])
+            btn.setText(f"{os_info['label']}\n{os_info['desc']}")
+            btn.setFont(QFont("Microsoft YaHei", 11))
+            self._os_group.addButton(btn)
+            self._os_btns[os_info["key"]] = btn
+            os_layout.addWidget(btn)
+
+        os_layout.addStretch(1)
+        layout.addLayout(os_layout)
+
+        layout.addSpacing(12)
 
         # 版本选择
         ver_title = QLabel("选择 SDK 版本")
@@ -206,9 +269,19 @@ class ConfigPage(QWidget):
         self.refresh_btn.setEnabled(True)
         QMessageBox.warning(self, "获取版本失败", msg)
 
+    def _get_selected_os(self) -> str:
+        for key, btn in self._os_btns.items():
+            if btn.isChecked():
+                return key
+        return ""
+
     def _on_next(self):
         if not self.x86_btn.isChecked() and not self.arm64_btn.isChecked():
             QMessageBox.warning(self, "请选择架构", "请先选择 CPU 架构")
+            return
+        selected_os = self._get_selected_os()
+        if not selected_os:
+            QMessageBox.warning(self, "请选择操作系统", "请先选择操作系统")
             return
         if self.version_combo.count() == 0:
             QMessageBox.warning(self, "无版本", "请等待版本列表加载完成")
@@ -216,10 +289,4 @@ class ConfigPage(QWidget):
 
         arch = "x86" if self.x86_btn.isChecked() else "arm64"
         version = self.version_combo.currentText()
-        self.next_clicked.emit(arch, version)
-
-    def get_selected_arch(self) -> str:
-        return "x86" if self.x86_btn.isChecked() else "arm64"
-
-    def get_selected_version(self) -> str:
-        return self.version_combo.currentText()
+        self.next_clicked.emit(arch, version, selected_os)

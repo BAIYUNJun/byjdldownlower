@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from downloader.config import CUSTOM_CATEGORIES, PRESETS
+from downloader.config import CUSTOM_CATEGORIES, OS_DISABLED_CATEGORIES, PRESETS
 
 
 class ModeSelectionPage(QWidget):
@@ -28,10 +28,13 @@ class ModeSelectionPage(QWidget):
         super().__init__()
         self._arch = ""
         self._version = ""
+        self._os = ""
         self._username = ""
         self._password = ""
         self._preset_btns: dict[str, QPushButton] = {}
         self._category_cbs: dict[str, QCheckBox] = {}
+        self._sdk_linked: set[str] = {"cuda11"}  # 跟随 SDK 自动选中/取消的类别
+        self._auto_updating = False
         self._setup_ui()
 
     def _setup_ui(self):
@@ -51,12 +54,12 @@ class ModeSelectionPage(QWidget):
         layout.addWidget(self.info_label)
 
         # 预设按钮区域
-        preset_title = QLabel("快速选择")
-        preset_title.setFont(QFont("Microsoft YaHei", 12, QFont.Weight.Bold))
-        layout.addWidget(preset_title)
+        self.preset_title = QLabel("快速选择")
+        self.preset_title.setFont(QFont("Microsoft YaHei", 12, QFont.Weight.Bold))
+        layout.addWidget(self.preset_title)
 
-        preset_layout = QHBoxLayout()
-        preset_layout.setSpacing(16)
+        self.preset_layout = QHBoxLayout()
+        self.preset_layout.setSpacing(16)
 
         self._preset_group = QButtonGroup(self)
         for key, preset in PRESETS.items():
@@ -84,10 +87,10 @@ class ModeSelectionPage(QWidget):
             btn.clicked.connect(lambda checked, k=key: self._on_preset_clicked(k))
             self._preset_group.addButton(btn)
             self._preset_btns[key] = btn
-            preset_layout.addWidget(btn)
+            self.preset_layout.addWidget(btn)
 
-        preset_layout.addStretch(1)
-        layout.addLayout(preset_layout)
+        self.preset_layout.addStretch(1)
+        layout.addLayout(self.preset_layout)
 
         layout.addSpacing(8)
 
@@ -116,6 +119,9 @@ class ModeSelectionPage(QWidget):
             cb.setCursor(Qt.CursorShape.PointingHandCursor)
             cb.setStyleSheet("QCheckBox { spacing: 6px; }")
             self._category_cbs[cat_key] = cb
+            # SDK 勾选联动 cuda11
+            if cat_key == "sdk":
+                cb.toggled.connect(self._on_sdk_toggled)
             if i < mid:
                 col_left.addWidget(cb)
             else:
@@ -169,20 +175,59 @@ class ModeSelectionPage(QWidget):
         btn_layout.addWidget(self.next_btn)
         layout.addLayout(btn_layout)
 
-    def on_enter(self, arch: str, version: str, username: str, password: str):
+    def on_enter(self, arch: str, version: str, os_name: str, username: str, password: str):
         """进入页面时设置上下文信息"""
         self._arch = arch
         self._version = version
+        self._os = os_name
         self._username = username
         self._password = password
+
         arch_display = "x86_64" if arch == "x86" else "ARM64"
-        self.info_label.setText(f"当前: {arch_display} | {version}")
+        os_display = os_name.capitalize()
+        self.info_label.setText(f"当前: {arch_display} | {os_display} | {version}")
+
+        # 根据操作系统禁用/启用组件
+        is_restricted = os_name in ("windows", "centos")
+
+        # "测试 vLLM" 预设包含 container 和 vllm_image，Windows/CentOS 下不可用
+        vllm_btn = self._preset_btns.get("vllm")
+        if vllm_btn:
+            vllm_btn.setVisible(not is_restricted)
+
+        # 禁用/启用相关 checkbox
+        for cat_key, cb in self._category_cbs.items():
+            if cat_key in OS_DISABLED_CATEGORIES:
+                cb.setEnabled(not is_restricted)
+                if is_restricted:
+                    cb.setChecked(False)
+            else:
+                cb.setEnabled(True)
+
+        # 清除预设选中状态
+        self._preset_group.setExclusive(False)
+        for btn in self._preset_btns.values():
+            btn.setChecked(False)
+        self._preset_group.setExclusive(True)
 
     def _on_preset_clicked(self, preset_key: str):
         """预设按钮被点击，自动勾选对应组件"""
         categories = PRESETS[preset_key]["categories"]
+        self._auto_updating = True
         for cat_key, cb in self._category_cbs.items():
-            cb.setChecked(cat_key in categories)
+            cb.setChecked(cat_key in categories and cb.isEnabled())
+        self._auto_updating = False
+
+    def _on_sdk_toggled(self, checked: bool):
+        """SDK 被勾选/取消时，自动勾选/取消 cuda11"""
+        if self._auto_updating:
+            return
+        self._auto_updating = True
+        for linked_key in self._sdk_linked:
+            cb = self._category_cbs.get(linked_key)
+            if cb and cb.isEnabled():
+                cb.setChecked(checked)
+        self._auto_updating = False
 
     def _on_next(self):
         """点击下一步：收集选中的类别，发射信号"""

@@ -49,6 +49,7 @@ class FetchFilesWorker(QThread):
         username: str,
         password: str,
         selected_categories: list[str] | None = None,
+        os_name: str = "",
     ):
         super().__init__()
         self.version = version
@@ -56,6 +57,7 @@ class FetchFilesWorker(QThread):
         self._username = username
         self._password = password
         self.selected_categories = selected_categories
+        self.os_name = os_name
 
     def run(self):
         try:
@@ -65,7 +67,7 @@ class FetchFilesWorker(QThread):
                 all_files = client.get_remote_file_list(self.version)
                 if self.selected_categories is not None:
                     matches = client.filter_custom(
-                        all_files, self.arch, self.selected_categories
+                        all_files, self.arch, self.selected_categories, self.os_name
                     )
                 else:
                     matches = {}

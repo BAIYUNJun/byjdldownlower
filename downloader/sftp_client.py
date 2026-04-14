@@ -96,15 +96,29 @@ class SFTPClient:
         else:  # arm64
             return "arm64" in basename or "aarch64" in basename
 
+    @staticmethod
+    def _matches_os(filename: str, os_name: str) -> bool:
+        """检查文件名是否匹配指定操作系统"""
+        basename = os.path.basename(filename).lower()
+        if os_name == "linux":
+            return "linux" in basename
+        elif os_name == "windows":
+            return "win" in basename
+        elif os_name == "centos":
+            return "centos" in basename
+        return True
+
     def filter_custom(
-        self, file_list: list[str], arch: str, selected_categories: list[str]
+        self, file_list: list[str], arch: str, selected_categories: list[str],
+        os_name: str = ""
     ) -> dict[str, list[str]]:
-        """根据选中的类别和架构过滤文件
+        """根据选中的类别、架构和操作系统过滤文件
 
         Args:
             file_list: 文件列表
             arch: "x86" 或 "arm64"
             selected_categories: 选中的类别 key 列表，如 ["driver", "sdk"]
+            os_name: 操作系统 key，如 "linux", "windows", "centos"
 
         Returns:
             {category_key: [file_paths], ...}
@@ -118,6 +132,7 @@ class SFTPClient:
 
             subdir = cat_config["subdir"]
             arch_filter = cat_config["arch_filter"]
+            os_filter = cat_config.get("os_filter", False)
             name_filter = cat_config.get("name_filter")
             matched: list[str] = []
 
@@ -130,8 +145,12 @@ class SFTPClient:
                 if name_filter and name_filter.lower() not in os.path.basename(file_path).lower():
                     continue
 
-                # 按架构过滤
-                if arch_filter and not self._matches_arch(file_path, arch):
+                # 按架构过滤（Windows 文件不区分��构，跳过）
+                if arch_filter and os_name != "windows" and not self._matches_arch(file_path, arch):
+                    continue
+
+                # 按操作系统过滤
+                if os_filter and os_name and not self._matches_os(file_path, os_name):
                     continue
 
                 matched.append(file_path)

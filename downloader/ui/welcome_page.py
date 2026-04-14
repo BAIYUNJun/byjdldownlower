@@ -36,12 +36,12 @@ class WelcomePage(QWidget):
         layout.addStretch(1)
 
         # 工具名称
-        title = QLabel("DengLin vLLM")
+        title = QLabel("登临部署包下载工具")
         title.setFont(QFont("Microsoft YaHei", 28, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
 
-        subtitle = QLabel("部署包下载工具")
+        subtitle = QLabel("V0.1")
         subtitle.setFont(QFont("Microsoft YaHei", 20))
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setStyleSheet("color: #666666;")

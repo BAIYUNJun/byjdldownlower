@@ -183,6 +183,7 @@ class DownloadPage(QWidget):
         username: str,
         password: str,
         mode_config: dict,
+        os_name: str = "",
     ):
         """进入下载页时，获取文件列表"""
         self._arch = arch
@@ -196,7 +197,7 @@ class DownloadPage(QWidget):
         self.download_btn.setEnabled(False)
 
         self._fetch_worker = FetchFilesWorker(
-            version, arch, username, password, selected_categories
+            version, arch, username, password, selected_categories, os_name
         )
         self._fetch_worker.success.connect(self._on_files_loaded)
         self._fetch_worker.error.connect(self._on_files_error)
