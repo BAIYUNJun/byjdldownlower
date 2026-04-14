@@ -1,4 +1,6 @@
-"""向导页面 3：文件列表 + 下载进度 + 日志"""
+"""向导页面 4：文件列表 + 下载进度 + 日志"""
+
+from __future__ import annotations
 
 import os
 import subprocess
@@ -33,6 +35,9 @@ class DownloadPage(QWidget):
         super().__init__()
         self._arch = ""
         self._version = ""
+        self._username = ""
+        self._password = ""
+        self._category_labels: dict[str, str] = {}
         self._matches: dict[str, list[str]] = {}
         self._all_files: list[str] = []
         self._download_worker: DownloadWorker | None = None
@@ -171,15 +176,28 @@ class DownloadPage(QWidget):
         btn_layout.addWidget(self.download_btn)
         layout.addLayout(btn_layout)
 
-    def on_enter(self, arch: str, version: str):
+    def on_enter(
+        self,
+        arch: str,
+        version: str,
+        username: str,
+        password: str,
+        mode_config: dict,
+    ):
         """进入下载页时，获取文件列表"""
         self._arch = arch
         self._version = version
+        self._username = username
+        self._password = password
+        self._category_labels = mode_config.get("category_labels", {})
+        selected_categories = mode_config.get("categories", [])
         self._reset_state()
         self._log(f"正在获取 {version} 版本的文件列表...")
         self.download_btn.setEnabled(False)
 
-        self._fetch_worker = FetchFilesWorker(version, arch)
+        self._fetch_worker = FetchFilesWorker(
+            version, arch, username, password, selected_categories
+        )
         self._fetch_worker.success.connect(self._on_files_loaded)
         self._fetch_worker.error.connect(self._on_files_error)
         self._fetch_worker.start()
@@ -203,9 +221,8 @@ class DownloadPage(QWidget):
         # 显示匹配文件
         self._clear_file_list()
         total = 0
-        categories = {"driver": "驱动包", "container": "容器包", "vllm": "vLLM 镜像"}
-        for cat, label in categories.items():
-            files = matches.get(cat, [])
+        for cat_key, files in matches.items():
+            label = self._category_labels.get(cat_key, cat_key)
             total += len(files)
             for f in files:
                 item = QLabel(f"  [{label}] {os.path.basename(f)}")
@@ -267,7 +284,9 @@ class DownloadPage(QWidget):
         self.download_btn.setText("取消下载")
         self.overall_progress.setMaximum(len(all_matched))
 
-        self._download_worker = DownloadWorker(self._version, all_matched, save_dir)
+        self._download_worker = DownloadWorker(
+            self._version, all_matched, save_dir, self._username, self._password
+        )
         self._download_worker.file_progress.connect(self._on_file_progress)
         self._download_worker.overall_progress.connect(self._on_overall_progress)
         self._download_worker.file_completed.connect(self._on_file_completed)

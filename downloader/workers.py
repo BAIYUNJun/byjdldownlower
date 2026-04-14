@@ -1,5 +1,7 @@
 """QThread 工作线程：版本获取、文件下载"""
 
+from __future__ import annotations
+
 import os
 
 from PyQt6.QtCore import QThread, pyqtSignal
@@ -13,9 +15,14 @@ class FetchVersionsWorker(QThread):
     success = pyqtSignal(list)   # versions: list[str]
     error = pyqtSignal(str)      # error_message: str
 
+    def __init__(self, username: str, password: str):
+        super().__init__()
+        self._username = username
+        self._password = password
+
     def run(self):
         try:
-            client = SFTPClient()
+            client = SFTPClient(self._username, self._password)
             client.connect()
             try:
                 versions = client.get_available_versions()
@@ -35,18 +42,33 @@ class FetchFilesWorker(QThread):
     success = pyqtSignal(dict, list)  # matches: dict, all_files: list
     error = pyqtSignal(str)
 
-    def __init__(self, version: str, arch: str):
+    def __init__(
+        self,
+        version: str,
+        arch: str,
+        username: str,
+        password: str,
+        selected_categories: list[str] | None = None,
+    ):
         super().__init__()
         self.version = version
         self.arch = arch
+        self._username = username
+        self._password = password
+        self.selected_categories = selected_categories
 
     def run(self):
         try:
-            client = SFTPClient()
+            client = SFTPClient(self._username, self._password)
             client.connect()
             try:
                 all_files = client.get_remote_file_list(self.version)
-                matches = client.filter_matches(all_files, self.arch)
+                if self.selected_categories is not None:
+                    matches = client.filter_custom(
+                        all_files, self.arch, self.selected_categories
+                    )
+                else:
+                    matches = {}
                 self.success.emit(matches, all_files)
             finally:
                 client.disconnect()
@@ -64,11 +86,15 @@ class DownloadWorker(QThread):
     all_done = pyqtSignal()
     error = pyqtSignal(str)
 
-    def __init__(self, version: str, files: list[str], save_dir: str):
+    def __init__(
+        self, version: str, files: list[str], save_dir: str, username: str, password: str
+    ):
         super().__init__()
         self.version = version
         self.files = files
         self.save_dir = save_dir
+        self._username = username
+        self._password = password
         self._cancelled = False
 
     def cancel(self):
@@ -76,7 +102,7 @@ class DownloadWorker(QThread):
 
     def run(self):
         try:
-            client = SFTPClient()
+            client = SFTPClient(self._username, self._password)
             client.connect()
             try:
                 total = len(self.files)

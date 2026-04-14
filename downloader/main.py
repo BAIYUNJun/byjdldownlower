@@ -2,6 +2,7 @@
 
 import sys
 
+from PyQt6.QtCore import QCoreApplication
 from PyQt6.QtWidgets import QApplication
 
 from downloader.ui.wizard import WizardWindow
@@ -9,6 +10,10 @@ from downloader.ui.wizard import WizardWindow
 
 def main():
     app = QApplication(sys.argv)
+
+    # QSettings 组织/应用名称（凭据持久化需要）
+    QCoreApplication.setOrganizationName("DengLin")
+    QCoreApplication.setApplicationName("vLLMDownloader")
 
     # 全局样式
     app.setStyleSheet("""

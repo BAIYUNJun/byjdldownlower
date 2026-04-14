@@ -1,5 +1,7 @@
 """向导页面 2：架构选择 + 版本选择"""
 
+from __future__ import annotations
+
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
@@ -26,6 +28,7 @@ class ArchCardButton(QPushButton):
         self.setFixedSize(200, 100)
         self.setCheckable(True)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.toggled.connect(self._update_style)
         self._update_style()
 
     def _update_style(self):
@@ -66,6 +69,8 @@ class ConfigPage(QWidget):
         super().__init__()
         self._versions: list[str] = []
         self._fetch_worker: FetchVersionsWorker | None = None
+        self._username = ""
+        self._password = ""
         self._setup_ui()
 
     def _setup_ui(self):
@@ -111,6 +116,10 @@ class ConfigPage(QWidget):
         self.version_combo.setFont(QFont("Microsoft YaHei", 11))
         self.version_combo.setMinimumHeight(36)
         self.version_combo.setEnabled(False)
+        try:
+            self.version_combo.setPlaceholderText("请选择 SDK 版本...")
+        except AttributeError:
+            pass
         ver_layout.addWidget(self.version_combo, 1)
 
         self.refresh_btn = QPushButton("刷新")
@@ -165,8 +174,10 @@ class ConfigPage(QWidget):
         btn_layout.addWidget(self.next_btn)
         layout.addLayout(btn_layout)
 
-    def on_enter(self):
+    def on_enter(self, username: str, password: str):
         """页面显示时自动获取版本列表"""
+        self._username = username
+        self._password = password
         if not self._versions:
             self._fetch_versions()
 
@@ -177,7 +188,7 @@ class ConfigPage(QWidget):
         self.version_status.setText("正在获取版本列表...")
         self.refresh_btn.setEnabled(False)
 
-        self._fetch_worker = FetchVersionsWorker()
+        self._fetch_worker = FetchVersionsWorker(self._username, self._password)
         self._fetch_worker.success.connect(self._on_versions_loaded)
         self._fetch_worker.error.connect(self._on_versions_error)
         self._fetch_worker.start()

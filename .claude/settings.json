@@ -8,7 +8,20 @@
       "Bash(python3 -m py_compile /Users/baiyunjun/Documents/AI实验/文档下载器/downloader/sftp_client.py)",
       "Bash(python3 -c \"import ast; ast.parse\\(open\\('/Users/baiyunjun/Documents/AI实验/文档下载器/downloader/ui/download_page.py'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
       "Bash(pip3 install:*)",
-      "Bash(/Users/baiyunjun/Library/Python/3.9/bin/pyinstaller --onefile --windowed --name \"DengLin下载工具\" --distpath ./dist --workpath ./build --specpath ./build downloader/main.py)"
+      "Bash(/Users/baiyunjun/Library/Python/3.9/bin/pyinstaller --onefile --windowed --name \"DengLin下载工具\" --distpath ./dist --workpath ./build --specpath ./build downloader/main.py)",
+      "Bash(python3 -m py_compile downloader/credentials.py)",
+      "Bash(python3 -m py_compile downloader/main.py)",
+      "Bash(python3 -m py_compile downloader/config.py)",
+      "Bash(python3 -m py_compile downloader/sftp_client.py)",
+      "Bash(python3 -m py_compile downloader/workers.py)",
+      "Bash(python3 -m py_compile downloader/ui/welcome_page.py)",
+      "Bash(python3 -m py_compile downloader/ui/config_page.py)",
+      "Bash(python3 -m py_compile downloader/ui/mode_selection_page.py)",
+      "Bash(python3 -m py_compile downloader/ui/download_page.py)",
+      "Bash(python3 -m py_compile downloader/ui/wizard.py)",
+      "Bash(python downloader/main.py)",
+      "Bash(python3 downloader/main.py)",
+      "Bash(PYTHONPATH=. python3 downloader/main.py)"
     ]
   }
 }

@@ -1,14 +1,16 @@
 """paramiko 封装：连接、列目录、获取版本、过滤文件、下载"""
 
+from __future__ import annotations
+
 import os
 import re
 from fnmatch import fnmatch
-from typing import Callable
+from typing import Callable, Optional
 
 import paramiko
 
 from downloader.config import (
-    ARCH_PATTERNS,
+    CUSTOM_CATEGORIES,
     SFTP_HOST,
     SFTP_PASS,
     SFTP_PORT,
@@ -21,14 +23,16 @@ from downloader.config import (
 class SFTPClient:
     """SFTP 客户端，封装 paramiko 连接和文件操作"""
 
-    def __init__(self):
+    def __init__(self, username: str = "", password: str = ""):
+        self._username = username or SFTP_USER
+        self._password = password or SFTP_PASS
         self._transport: paramiko.Transport | None = None
         self._sftp: paramiko.SFTPClient | None = None
 
     def connect(self):
         """建立 SFTP 连接，失败抛出异常"""
         self._transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
-        self._transport.connect(username=SFTP_USER, password=SFTP_PASS)
+        self._transport.connect(username=self._username, password=self._password)
         self._sftp = paramiko.SFTPClient.from_transport(self._transport)
 
     def disconnect(self):
@@ -83,28 +87,56 @@ class SFTPClient:
 
         return all_files
 
-    def filter_matches(self, file_list: list[str], arch: str) -> dict[str, list[str]]:
-        """根据架构过滤匹配的文件
+    @staticmethod
+    def _matches_arch(filename: str, arch: str) -> bool:
+        """检查文件名是否匹配指定架构"""
+        basename = os.path.basename(filename).lower()
+        if arch == "x86":
+            return "x86" in basename
+        else:  # arm64
+            return "arm64" in basename or "aarch64" in basename
+
+    def filter_custom(
+        self, file_list: list[str], arch: str, selected_categories: list[str]
+    ) -> dict[str, list[str]]:
+        """根据选中的类别和架构过滤文件
 
         Args:
             file_list: 文件列表
             arch: "x86" 或 "arm64"
+            selected_categories: 选中的类别 key 列表，如 ["driver", "sdk"]
 
         Returns:
-            {"driver": [...], "container": [...], "vllm": [...]}
+            {category_key: [file_paths], ...}
         """
-        patterns = ARCH_PATTERNS[arch]
-        result: dict[str, list[str]] = {"driver": [], "container": [], "vllm": []}
+        result: dict[str, list[str]] = {}
 
-        for file_name in file_list:
-            basename = os.path.basename(file_name)
-            for category, pats in patterns.items():
-                if isinstance(pats, str):
-                    pats = [pats]
-                for pat in pats:
-                    if fnmatch(basename, pat):
-                        result[category].append(file_name)
-                        break
+        for cat_key in selected_categories:
+            cat_config = CUSTOM_CATEGORIES.get(cat_key)
+            if not cat_config:
+                continue
+
+            subdir = cat_config["subdir"]
+            arch_filter = cat_config["arch_filter"]
+            name_filter = cat_config.get("name_filter")
+            matched: list[str] = []
+
+            for file_path in file_list:
+                # 按子目录前缀过滤
+                if subdir and not file_path.startswith(subdir + "/"):
+                    continue
+
+                # 按文件名关键字过滤
+                if name_filter and name_filter.lower() not in os.path.basename(file_path).lower():
+                    continue
+
+                # 按架构过滤
+                if arch_filter and not self._matches_arch(file_path, arch):
+                    continue
+
+                matched.append(file_path)
+
+            result[cat_key] = matched
 
         return result
 
@@ -113,7 +145,7 @@ class SFTPClient:
         remote_path: str,
         local_dir: str,
         version: str,
-        progress_callback: Callable[[int, int], None] | None = None,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> str:
         """下载单个文件，支持断点续传检测"""
         remote_full = f"{REMOTE_BASE_DIR}/{version}/{remote_path}"
