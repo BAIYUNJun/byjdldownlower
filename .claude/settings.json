@@ -21,7 +21,16 @@
       "Bash(python3 -m py_compile downloader/ui/wizard.py)",
       "Bash(python downloader/main.py)",
       "Bash(python3 downloader/main.py)",
-      "Bash(PYTHONPATH=. python3 downloader/main.py)"
+      "Bash(PYTHONPATH=. python3 downloader/main.py)",
+      "Bash(echo \"应用已启动，PID: $!\")",
+      "Bash(pkill -f \"python3 downloader/main.py\")",
+      "Bash(pyinstaller --version)",
+      "Bash(python3 -c \"import PyQt6; print\\('PyQt6 OK'\\)\")",
+      "Bash(python3 -c \"import paramiko; print\\('paramiko OK'\\)\")",
+      "Bash(pip3 list:*)",
+      "Bash(pyinstaller build/DengLin下载工具.spec --clean)",
+      "Bash(python3 -m PyInstaller build/DengLin下载工具.spec --clean)",
+      "Bash(python3 -m PyInstaller build/DengLin下载工具.spec --clean -y)"
     ]
   }
 }

@@ -15,10 +15,11 @@
 
 <div class="node">
   <a name="main.py"></a>
-  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/%E6%96%87%E6%A1%A3%E4%B8%8B%E8%BD%BD%E5%99%A8/downloader/main.py" type="text/plain"><tt>main.py</tt></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/main.py" type="text/plain"><tt>main.py</tt></a>
 <span class="moduletype">Script</span>  <div class="import">
 imports:
-    <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#_bootlocale">_bootlocale</a>
  &#8226;   <a href="#_collections_abc">_collections_abc</a>
  &#8226;   <a href="#_weakrefset">_weakrefset</a>
@@ -291,7 +292,7 @@ imported by:
   <a target="code" href="" type="text/plain"><tt>'org.python'</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
 imported by:
-    <a href="#copy">copy</a>
+    <a href="#pickle">pickle</a>
  &#8226;   <a href="#xml.sax">xml.sax</a>
 
   </div>
@@ -314,8 +315,7 @@ imported by:
   <a target="code" href="/Users/baiyunjun/Library/Python/3.9/lib/python/site-packages/PyQt6/__init__.py" type="text/plain"><tt>PyQt6</tt></a>
 <span class="moduletype">Package</span>  <div class="import">
 imports:
-    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
- &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
+    <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.sip">PyQt6.sip</a>
  &#8226;   <a href="#pkgutil">pkgutil</a>
 
@@ -348,15 +348,17 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#PyQt6">PyQt6</a>
- &#8226;   <a href="#PyQt6.QtDBus">PyQt6.QtDBus</a>
+    <a href="#PyQt6.QtDBus">PyQt6.QtDBus</a>
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#downloader.credentials">downloader.credentials</a>
  &#8226;   <a href="#downloader.ui.config_page">downloader.ui.config_page</a>
  &#8226;   <a href="#downloader.ui.download_page">downloader.ui.download_page</a>
+ &#8226;   <a href="#downloader.ui.mode_selection_page">downloader.ui.mode_selection_page</a>
  &#8226;   <a href="#downloader.ui.welcome_page">downloader.ui.welcome_page</a>
  &#8226;   <a href="#downloader.ui.wizard">downloader.ui.wizard</a>
  &#8226;   <a href="#downloader.workers">downloader.workers</a>
+ &#8226;   <a href="#main.py">main.py</a>
 
   </div>
 
@@ -407,6 +409,7 @@ imported by:
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#downloader.ui.config_page">downloader.ui.config_page</a>
  &#8226;   <a href="#downloader.ui.download_page">downloader.ui.download_page</a>
+ &#8226;   <a href="#downloader.ui.mode_selection_page">downloader.ui.mode_selection_page</a>
  &#8226;   <a href="#downloader.ui.welcome_page">downloader.ui.welcome_page</a>
  &#8226;   <a href="#downloader.ui.wizard">downloader.ui.wizard</a>
 
@@ -434,6 +437,7 @@ imports:
 imported by:
     <a href="#downloader.ui.config_page">downloader.ui.config_page</a>
  &#8226;   <a href="#downloader.ui.download_page">downloader.ui.download_page</a>
+ &#8226;   <a href="#downloader.ui.mode_selection_page">downloader.ui.mode_selection_page</a>
  &#8226;   <a href="#downloader.ui.welcome_page">downloader.ui.welcome_page</a>
  &#8226;   <a href="#downloader.ui.wizard">downloader.ui.wizard</a>
  &#8226;   <a href="#main.py">main.py</a>
@@ -501,6 +505,12 @@ imported by:
  &#8226;   <a href="#cryptography.hazmat.primitives.serialization">cryptography.hazmat.primitives.serialization</a>
  &#8226;   <a href="#cryptography.hazmat.primitives.serialization.ssh">cryptography.hazmat.primitives.serialization.ssh</a>
  &#8226;   <a href="#cryptography.utils">cryptography.utils</a>
+ &#8226;   <a href="#downloader.credentials">downloader.credentials</a>
+ &#8226;   <a href="#downloader.sftp_client">downloader.sftp_client</a>
+ &#8226;   <a href="#downloader.ui.config_page">downloader.ui.config_page</a>
+ &#8226;   <a href="#downloader.ui.download_page">downloader.ui.download_page</a>
+ &#8226;   <a href="#downloader.ui.mode_selection_page">downloader.ui.mode_selection_page</a>
+ &#8226;   <a href="#downloader.workers">downloader.workers</a>
 
   </div>
 
@@ -3075,8 +3085,8 @@ imported by:
   <a target="code" href="/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/copy.py" type="text/plain"><tt>copy</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
-    <a href="#'org.python'">'org.python'</a>
- &#8226;   <a href="#copyreg">copyreg</a>
+    <a href="#copyreg">copyreg</a>
+ &#8226;   <a href="#org">org</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#weakref">weakref</a>
 
@@ -4338,12 +4348,19 @@ imported by:
 
 <div class="node">
   <a name="downloader"></a>
-  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/%E6%96%87%E6%A1%A3%E4%B8%8B%E8%BD%BD%E5%99%A8/downloader/__init__.py" type="text/plain"><tt>downloader</tt></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/__init__.py" type="text/plain"><tt>downloader</tt></a>
 <span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#downloader.credentials">downloader.credentials</a>
+
+  </div>
+  <div class="import">
 imported by:
     <a href="#downloader.config">downloader.config</a>
+ &#8226;   <a href="#downloader.credentials">downloader.credentials</a>
  &#8226;   <a href="#downloader.sftp_client">downloader.sftp_client</a>
  &#8226;   <a href="#downloader.ui">downloader.ui</a>
+ &#8226;   <a href="#downloader.ui.welcome_page">downloader.ui.welcome_page</a>
  &#8226;   <a href="#downloader.workers">downloader.workers</a>
 
   </div>
@@ -4352,7 +4369,7 @@ imported by:
 
 <div class="node">
   <a name="downloader.config"></a>
-  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/%E6%96%87%E6%A1%A3%E4%B8%8B%E8%BD%BD%E5%99%A8/downloader/config.py" type="text/plain"><tt>downloader.config</tt></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/config.py" type="text/plain"><tt>downloader.config</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#downloader">downloader</a>
@@ -4361,6 +4378,27 @@ imports:
   <div class="import">
 imported by:
     <a href="#downloader.sftp_client">downloader.sftp_client</a>
+ &#8226;   <a href="#downloader.ui.config_page">downloader.ui.config_page</a>
+ &#8226;   <a href="#downloader.ui.mode_selection_page">downloader.ui.mode_selection_page</a>
+ &#8226;   <a href="#downloader.ui.welcome_page">downloader.ui.welcome_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="downloader.credentials"></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/credentials.py" type="text/plain"><tt>downloader.credentials</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#downloader">downloader</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#downloader">downloader</a>
  &#8226;   <a href="#downloader.ui.welcome_page">downloader.ui.welcome_page</a>
 
   </div>
@@ -4369,10 +4407,11 @@ imported by:
 
 <div class="node">
   <a name="downloader.sftp_client"></a>
-  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/%E6%96%87%E6%A1%A3%E4%B8%8B%E8%BD%BD%E5%99%A8/downloader/sftp_client.py" type="text/plain"><tt>downloader.sftp_client</tt></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/sftp_client.py" type="text/plain"><tt>downloader.sftp_client</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
-    <a href="#downloader">downloader</a>
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#downloader">downloader</a>
  &#8226;   <a href="#downloader.config">downloader.config</a>
  &#8226;   <a href="#fnmatch">fnmatch</a>
  &#8226;   <a href="#os">os</a>
@@ -4391,7 +4430,7 @@ imported by:
 
 <div class="node">
   <a name="downloader.ui"></a>
-  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/%E6%96%87%E6%A1%A3%E4%B8%8B%E8%BD%BD%E5%99%A8/downloader/ui/__init__.py" type="text/plain"><tt>downloader.ui</tt></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/ui/__init__.py" type="text/plain"><tt>downloader.ui</tt></a>
 <span class="moduletype">Package</span>  <div class="import">
 imports:
     <a href="#downloader">downloader</a>
@@ -4401,6 +4440,7 @@ imports:
 imported by:
     <a href="#downloader.ui.config_page">downloader.ui.config_page</a>
  &#8226;   <a href="#downloader.ui.download_page">downloader.ui.download_page</a>
+ &#8226;   <a href="#downloader.ui.mode_selection_page">downloader.ui.mode_selection_page</a>
  &#8226;   <a href="#downloader.ui.welcome_page">downloader.ui.welcome_page</a>
  &#8226;   <a href="#downloader.ui.wizard">downloader.ui.wizard</a>
 
@@ -4410,12 +4450,14 @@ imported by:
 
 <div class="node">
   <a name="downloader.ui.config_page"></a>
-  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/%E6%96%87%E6%A1%A3%E4%B8%8B%E8%BD%BD%E5%99%A8/downloader/ui/config_page.py" type="text/plain"><tt>downloader.ui.config_page</tt></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/ui/config_page.py" type="text/plain"><tt>downloader.ui.config_page</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#downloader.config">downloader.config</a>
  &#8226;   <a href="#downloader.ui">downloader.ui</a>
  &#8226;   <a href="#downloader.workers">downloader.workers</a>
 
@@ -4430,12 +4472,13 @@ imported by:
 
 <div class="node">
   <a name="downloader.ui.download_page"></a>
-  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/%E6%96%87%E6%A1%A3%E4%B8%8B%E8%BD%BD%E5%99%A8/downloader/ui/download_page.py" type="text/plain"><tt>downloader.ui.download_page</tt></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/ui/download_page.py" type="text/plain"><tt>downloader.ui.download_page</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#downloader.ui">downloader.ui</a>
  &#8226;   <a href="#downloader.workers">downloader.workers</a>
  &#8226;   <a href="#os">os</a>
@@ -4452,14 +4495,38 @@ imported by:
 </div>
 
 <div class="node">
-  <a name="downloader.ui.welcome_page"></a>
-  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/%E6%96%87%E6%A1%A3%E4%B8%8B%E8%BD%BD%E5%99%A8/downloader/ui/welcome_page.py" type="text/plain"><tt>downloader.ui.welcome_page</tt></a>
+  <a name="downloader.ui.mode_selection_page"></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/ui/mode_selection_page.py" type="text/plain"><tt>downloader.ui.mode_selection_page</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#downloader.config">downloader.config</a>
+ &#8226;   <a href="#downloader.ui">downloader.ui</a>
+ &#8226;   <a href="#downloader.workers">downloader.workers</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#downloader.ui.wizard">downloader.ui.wizard</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="downloader.ui.welcome_page"></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/ui/welcome_page.py" type="text/plain"><tt>downloader.ui.welcome_page</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#downloader">downloader</a>
+ &#8226;   <a href="#downloader.config">downloader.config</a>
+ &#8226;   <a href="#downloader.credentials">downloader.credentials</a>
  &#8226;   <a href="#downloader.ui">downloader.ui</a>
 
   </div>
@@ -4473,7 +4540,7 @@ imported by:
 
 <div class="node">
   <a name="downloader.ui.wizard"></a>
-  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/%E6%96%87%E6%A1%A3%E4%B8%8B%E8%BD%BD%E5%99%A8/downloader/ui/wizard.py" type="text/plain"><tt>downloader.ui.wizard</tt></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/ui/wizard.py" type="text/plain"><tt>downloader.ui.wizard</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
@@ -4482,6 +4549,7 @@ imports:
  &#8226;   <a href="#downloader.ui">downloader.ui</a>
  &#8226;   <a href="#downloader.ui.config_page">downloader.ui.config_page</a>
  &#8226;   <a href="#downloader.ui.download_page">downloader.ui.download_page</a>
+ &#8226;   <a href="#downloader.ui.mode_selection_page">downloader.ui.mode_selection_page</a>
  &#8226;   <a href="#downloader.ui.welcome_page">downloader.ui.welcome_page</a>
 
   </div>
@@ -4495,10 +4563,11 @@ imported by:
 
 <div class="node">
   <a name="downloader.workers"></a>
-  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/%E6%96%87%E6%A1%A3%E4%B8%8B%E8%BD%BD%E5%99%A8/downloader/workers.py" type="text/plain"><tt>downloader.workers</tt></a>
+  <a target="code" href="/Users/baiyunjun/Documents/AI%E5%AE%9E%E9%AA%8C/byjdldownloader/byjdldownlower/downloader/workers.py" type="text/plain"><tt>downloader.workers</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#downloader">downloader</a>
  &#8226;   <a href="#downloader.sftp_client">downloader.sftp_client</a>
  &#8226;   <a href="#os">os</a>
@@ -4508,6 +4577,7 @@ imports:
 imported by:
     <a href="#downloader.ui.config_page">downloader.ui.config_page</a>
  &#8226;   <a href="#downloader.ui.download_page">downloader.ui.download_page</a>
+ &#8226;   <a href="#downloader.ui.mode_selection_page">downloader.ui.mode_selection_page</a>
 
   </div>
 
@@ -11270,7 +11340,7 @@ imported by:
   <a target="code" href="" type="text/plain"><tt>org</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
 imported by:
-    <a href="#pickle">pickle</a>
+    <a href="#copy">copy</a>
 
   </div>
 
@@ -12739,14 +12809,14 @@ imported by:
   <a target="code" href="/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pickle.py" type="text/plain"><tt>pickle</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
-    <a href="#_compat_pickle">_compat_pickle</a>
+    <a href="#'org.python'">'org.python'</a>
+ &#8226;   <a href="#_compat_pickle">_compat_pickle</a>
  &#8226;   <a href="#_pickle">_pickle</a>
  &#8226;   <a href="#codecs">codecs</a>
  &#8226;   <a href="#copyreg">copyreg</a>
  &#8226;   <a href="#functools">functools</a>
  &#8226;   <a href="#io">io</a>
  &#8226;   <a href="#itertools">itertools</a>
- &#8226;   <a href="#org">org</a>
  &#8226;   <a href="#pprint">pprint</a>
  &#8226;   <a href="#re">re</a>
  &#8226;   <a href="#struct">struct</a>

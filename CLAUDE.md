@@ -30,6 +30,23 @@ PYTHONPATH=. python3 downloader/main.py
 - PyQt6 >= 6.6.0
 - paramiko >= 3.4.0
 
+## Packaging
+
+```bash
+# macOS .app (arm64)
+python3 -m PyInstaller build/DengLin下载工具.spec --clean -y
+
+# Windows .exe
+pyinstaller --onefile --windowed --name "登临部署包下载工具" --distpath ./dist --workpath ./build --specpath ./build downloader/main.py
+```
+
+## Development Commands
+
+```bash
+# Syntax check (no automated tests exist)
+python3 -m py_compile downloader/<file>.py
+```
+
 ## Architecture
 
 ### Shell script (`download_packages.sh`)
@@ -43,41 +60,60 @@ Single-file program with two SFTP backends: **lftp** (preferred) and **sftp+expe
 | Index | Page | File | Role |
 |-------|------|------|------|
 | 0 | Welcome | `ui/welcome_page.py` | SFTP credentials input (username/password + remember via QSettings) |
-| 1 | Config | `ui/config_page.py` | Architecture cards + OS cards + SDK version combo (fetched async) |
-| 2 | Mode Selection | `ui/mode_selection_page.py` | Preset buttons (测试vLLM/测试CV/其他) + 8 component checkboxes |
+| 1 | Config | `ui/config_page.py` | Release type toggle + arch cards + OS cards + SDK version combo |
+| 2 | Mode Selection | `ui/mode_selection_page.py` | Preset buttons / dynamic file checkboxes + component checkboxes |
 | 3 | Download | `ui/download_page.py` | Matched file list, save dir picker, progress bars, log |
+
+**Two release modes** controlled by a toggle on the config page:
+
+- **Standard release** (default): Version dropdown shows `V2 General release/<version>` entries. User selects arch + OS + version → mode selection page shows preset buttons and 8 fixed category checkboxes → download page fetches files via `FetchFilesWorker` and filters by category/arch/OS.
+- **Custom release**: Version dropdown shows root-level folders (excluding `V2 General release` / `V1 General release`). No arch/OS selection needed → mode selection page hides presets, fetches folder contents via `FetchCustomFilesWorker` and generates a checkbox per file → download page downloads checked files directly.
+
+The release type toggle is **auto-hidden** if no custom folders exist on the server (detected on first entry to config page via `FetchCustomFoldersWorker`).
+
+**Wizard state flow** — `WizardWindow` stores `_username`, `_password`, `_selected_arch`, `_selected_version`, `_selected_os`, `_release_type` and passes them through `on_enter()` calls when navigating between pages. The `next_clicked` signal chain is 4-string for config→mode (`arch, version, os, release_type`) and dict for mode→download (`mode_config`).
+
+**Async via QThread** — `workers.py` contains five worker threads: `FetchVersionsWorker`, `FetchFilesWorker`, `FetchCustomFoldersWorker`, `FetchCustomFilesWorker`, `DownloadWorker`. Each creates its own SFTPClient, connects, does work, disconnects. No connection pooling. UI communicates with workers via Qt signals/slots only.
 
 **Data flow:**
 ```
-credentials.py (QSettings) ←→ welcome_page.py (user input)
-config.py (categories/presets) → sftp_client.py (filter_custom) → workers.py (QThread) → UI pages (signals/slots)
+Standard release:
+  config_page(arch, version, os, "standard")
+    → mode_selection_page(presets + fixed categories)
+    → download_page(FetchFilesWorker → filter → download)
+
+Custom release:
+  config_page("", folder, "", "custom")
+    → mode_selection_page(FetchCustomFilesWorker → dynamic checkboxes)
+    → download_page(direct download with is_custom=True)
 ```
-
-**Async via QThread** — `workers.py` contains three worker threads (FetchVersionsWorker, FetchFilesWorker, DownloadWorker). Each creates its own SFTPClient, connects, does work, disconnects. No connection pooling. UI communicates with workers via Qt signals/slots only.
-
-**Wizard state flow** — `WizardWindow` stores `_username`, `_password`, `_selected_arch`, `_selected_version`, `_selected_os` and passes them through `on_enter()` calls when navigating between pages.
 
 ## Config System (`downloader/config.py`)
 
-- `CUSTOM_CATEGORIES` — dict of download categories, each with `subdir`, `arch_filter`, `os_filter`, optional `name_filter`. Controls what files are matched.
+- `SFTP_HOST/PORT/USER/PASS` — connection defaults (overridden by user input at runtime)
+- `CUSTOM_CATEGORIES` — dict of download categories, each with `subdir`, `arch_filter`, `os_filter`, optional `name_filter`. Controls what files are matched in standard release mode.
 - `PRESETS` — quick-select buttons that auto-check categories. "测试 CV" includes `cuda11` linked to SDK.
-- `OS_OPTIONS` — available OS choices. `OS_DISABLED_CATEGORIES` defines which categories are disabled for Windows/CentOS (container/image types).
-- `SUB_DIRS` — all remote subdirectories to scan during file listing.
+- `OS_OPTIONS` — available OS choices. `OS_DISABLED_CATEGORIES` defines which categories are disabled for Windows/CentOS.
+- `SUB_DIRS` — remote subdirectories to scan during standard release file listing.
+- `REMOTE_BASE_DIR` — `"/V2 General release"`, the parent directory for standard release versions.
 
 ## File Matching Logic (`downloader/sftp_client.py`)
+
+### Standard release
 
 `filter_custom(file_list, arch, selected_categories, os_name)` applies filters in order per category:
 1. Subdirectory prefix match
 2. Name keyword match (`name_filter` in config)
-3. Architecture match (`_matches_arch` — x86/arm64/aarch64 in filename). **Windows files skip this filter** since Windows filenames lack arch indicators.
+3. Architecture match (`_matches_arch` — x86/arm64/aarch64 in filename). **Windows files skip this filter**.
 4. OS match (`_matches_os` — "linux"/"win"/"centos" in filename)
 
-**FTP file naming conventions:**
-- Linux driver: `denglin-driver-v2-X.Y.Z-manylinux_2_28-x86_64.tar.xz`
-- Windows driver: `denglin-driver-v2-X.Y.Z-windows.zip`
-- Linux SDK: `denglin-sdk-MR-X.X-TIMESTAMP-manylinux_2_28-x86_64.tar.xz`
-- Windows SDK: `denglin-sdk-MR-X.X-TIMESTAMP-win.zip`
-- cuda11: `cuda11.tar` (version root directory, cross-platform)
+### Custom release
+
+`get_custom_folders()` lists root `/` directories, excludes `V2/V1 General release`, returns only directories. `get_custom_files(folder)` lists files in a custom folder root (no recursion, no filtering).
+
+### Download path construction
+
+`download_file(is_custom=False)` uses `{REMOTE_BASE_DIR}/{version}/{path}` for standard and `/{version}/{path}` for custom.
 
 ## UI Patterns
 
@@ -86,33 +122,17 @@ config.py (categories/presets) → sftp_client.py (filter_custom) → workers.py
 - **SDK ↔ cuda11 linkage** — `mode_selection_page.py` connects SDK checkbox `toggled` to auto-check cuda11. Uses `_auto_updating` flag to prevent recursive triggers.
 - **Global stylesheet** in `main.py` — QComboBox must include `QAbstractItemView` styling for dropdown visibility.
 - **Window title:** "登临部署包下载工具V0.1"
+- **Config page uses QScrollArea** — content wrapped in scroll area to handle varying content height (release type toggle may be hidden). The scroll area must override global stylesheet with `border: none; background: transparent;` to remove gray border.
+- **Font fallback** — `QFont("Microsoft YaHei", ...)` is used throughout; falls back to system font on macOS (PingFang SC via global stylesheet). The log box uses `QFont("Consolas", 10)` which falls back to Menlo on macOS.
 
 ## Credential Persistence (`downloader/credentials.py`)
 
-Uses `QSettings("DengLin", "vLLMDownloader")` with organization/app name set in `main.py`. Plaintext storage — no encryption.
-
-## Packaging for Windows
-
-```bash
-pyinstaller --onefile --windowed --name "登临部署包下载工具" --distpath ./dist --workpath ./build --specpath ./build downloader/main.py
-```
-
-## Development Commands
-
-```bash
-# Syntax check (no automated tests exist)
-python3 -m py_compile downloader/<file>.py
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run app
-PYTHONPATH=. python3 downloader/main.py
-```
+Uses `QSettings("DengLin", "vLLMDownloader")` with organization/app name set in `main.py`. Plaintext storage — no encryption. On macOS stores to `~/Library/Preferences/com.DengLin.vLLMDownloader.plist`.
 
 ## Development Notes
 
 - No automated tests or linting configured
-- SFTP credentials are hardcoded as defaults in `config.py` (lines 5-6) but overridden by user input at runtime
+- SFTP credentials are hardcoded as defaults in `config.py` but overridden by user input at runtime
 - The shell script is legacy; all new features go into the PyQt6 app
 - `QCoreApplication.setOrganizationName("DengLin")` and `setApplicationName("vLLMDownloader")` must be called before any QSettings usage
+- All UI text is in Chinese (简体中文)

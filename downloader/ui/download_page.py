@@ -42,6 +42,9 @@ class DownloadPage(QWidget):
         self._all_files: list[str] = []
         self._download_worker: DownloadWorker | None = None
         self._download_start_time: float = 0
+        self._current_file_start_time: float = 0
+        self._current_file_transferred: int = 0
+        self._release_type: str = "standard"
         self._setup_ui()
 
     def _setup_ui(self):
@@ -184,24 +187,40 @@ class DownloadPage(QWidget):
         password: str,
         mode_config: dict,
         os_name: str = "",
+        release_type: str = "standard",
     ):
-        """进入下载页时，获取文件列表"""
+        """进入下载页时，获取文件列表或直接使用定制文件"""
         self._arch = arch
         self._version = version
         self._username = username
         self._password = password
+        self._release_type = release_type
         self._category_labels = mode_config.get("category_labels", {})
-        selected_categories = mode_config.get("categories", [])
         self._reset_state()
-        self._log(f"正在获取 {version} 版本的文件列表...")
-        self.download_btn.setEnabled(False)
 
-        self._fetch_worker = FetchFilesWorker(
-            version, arch, username, password, selected_categories, os_name
-        )
-        self._fetch_worker.success.connect(self._on_files_loaded)
-        self._fetch_worker.error.connect(self._on_files_error)
-        self._fetch_worker.start()
+        if release_type == "custom":
+            # 定制模式：文件列表已从模式选择页获取，直接使用
+            files = mode_config.get("files", [])
+            self._matches = {"custom": files}
+            self._all_files = files
+            self._show_file_list(files)
+            if files:
+                self._log(f"共 {len(files)} 个文件待下载")
+                self.download_btn.setEnabled(True)
+            else:
+                self._log("未找到文件")
+        else:
+            # 标准模式：后台获取并过滤
+            selected_categories = mode_config.get("categories", [])
+            self._log(f"正在获取 {version} 版本的文件列表...")
+            self.download_btn.setEnabled(False)
+
+            self._fetch_worker = FetchFilesWorker(
+                version, arch, username, password, selected_categories, os_name
+            )
+            self._fetch_worker.success.connect(self._on_files_loaded)
+            self._fetch_worker.error.connect(self._on_files_error)
+            self._fetch_worker.start()
 
     def _reset_state(self):
         self._matches = {}
@@ -219,7 +238,6 @@ class DownloadPage(QWidget):
         self._matches = matches
         self._all_files = all_files
 
-        # 显示匹配文件
         self._clear_file_list()
         total = 0
         for cat_key, files in matches.items():
@@ -242,6 +260,14 @@ class DownloadPage(QWidget):
         else:
             self._log(f"找到 {total} 个匹配文件")
             self.download_btn.setEnabled(True)
+
+    def _show_file_list(self, files: list[str]):
+        """显示文件列表到UI（定制模式使用）"""
+        self._clear_file_list()
+        for f in files:
+            item = QLabel(f"  {os.path.basename(f)}")
+            item.setFont(QFont("Microsoft YaHei", 10))
+            self.file_list_layout.addWidget(item)
 
     def _on_files_error(self, msg: str):
         self._log(f"错误: {msg}")
@@ -282,11 +308,14 @@ class DownloadPage(QWidget):
             return
 
         self._download_start_time = time.time()
+        self._current_file_start_time = time.time()
+        self._current_file_transferred = 0
         self.download_btn.setText("取消下载")
         self.overall_progress.setMaximum(len(all_matched))
 
         self._download_worker = DownloadWorker(
-            self._version, all_matched, save_dir, self._username, self._password
+            self._version, all_matched, save_dir, self._username, self._password,
+            is_custom=getattr(self, "_release_type", "standard") == "custom",
         )
         self._download_worker.file_progress.connect(self._on_file_progress)
         self._download_worker.overall_progress.connect(self._on_overall_progress)
@@ -304,10 +333,22 @@ class DownloadPage(QWidget):
             pct = transferred / total * 100
             self.file_progress.setFormat(f"{pct:.1f}%")
 
-            elapsed = time.time() - self._download_start_time
-            if elapsed > 0 and transferred > 0:
-                speed = transferred / elapsed
-                self.speed_label.setText(self._format_size(speed) + "/s")
+            # 使用当前文件维度的速度计算
+            elapsed = time.time() - self._current_file_start_time
+            if elapsed > 0.5 and transferred > 0:
+                speed = (transferred - self._current_file_transferred) / elapsed
+                if speed > 0:
+                    self.speed_label.setText(self._format_size(speed) + "/s")
+
+    def _on_overall_progress(self, completed: int, total: int):
+        self.overall_progress.setValue(completed)
+        self.overall_progress.setFormat(f"{completed}/{total}")
+
+    def _on_file_completed(self, filename: str):
+        self._log(f"✓ {filename} 下载完成")
+        # 重置当前文件的计时
+        self._current_file_start_time = time.time()
+        self._current_file_transferred = 0
 
     def _on_overall_progress(self, completed: int, total: int):
         self.overall_progress.setValue(completed)

@@ -27,6 +27,7 @@ class WizardWindow(QWidget):
         self._selected_arch = ""
         self._selected_version = ""
         self._selected_os = ""
+        self._release_type = "standard"
         self._setup_ui()
 
     def _setup_ui(self):
@@ -154,13 +155,17 @@ class WizardWindow(QWidget):
         self._update_steps(1)
         self.config_page.on_enter(username, password)
 
-    def _go_to_mode_selection(self, arch: str, version: str, os_name: str):
+    def _go_to_mode_selection(self, arch: str, version: str, os_name: str,
+                              release_type: str = "standard"):
         self._selected_arch = arch
         self._selected_version = version
         self._selected_os = os_name
+        self._release_type = release_type
         self.stack.setCurrentIndex(2)
         self._update_steps(2)
-        self.mode_page.on_enter(arch, version, os_name, self._username, self._password)
+        self.mode_page.on_enter(
+            arch, version, os_name, self._username, self._password, release_type
+        )
 
     def _go_to_download(self, mode_config: dict):
         self.stack.setCurrentIndex(3)
@@ -172,6 +177,7 @@ class WizardWindow(QWidget):
             self._password,
             mode_config,
             self._selected_os,
+            self._release_type,
         )
 
     def _go_to_mode_selection_back(self):
@@ -181,4 +187,5 @@ class WizardWindow(QWidget):
         self.mode_page.on_enter(
             self._selected_arch, self._selected_version,
             self._selected_os, self._username, self._password,
+            self._release_type,
         )

@@ -159,15 +159,66 @@ class SFTPClient:
 
         return result
 
+    def get_custom_folders(self) -> list[str]:
+        """获取根目录下的定制发布文件夹列表
+
+        排除 V2 General release 和 V1 General release，只返回目录类型条目。
+
+        Returns:
+            文件夹名称列表，按名称降序排序
+        """
+        entries = self._sftp.listdir("/")
+        exclude = {"V2 General release", "V1 General release"}
+        folders: list[str] = []
+        for e in entries:
+            if e in exclude:
+                continue
+            try:
+                attr = self._sftp.stat("/" + e)
+                if attr.st_mode & 0o170000 == 0o040000:  # 仅目录
+                    folders.append(e)
+            except (IOError, FileNotFoundError):
+                continue
+        folders.sort(reverse=True)
+        return folders
+
+    def get_custom_files(self, folder: str) -> list[str]:
+        """获取定制文件夹根目录下的所有文件（不递归子目录）
+
+        Args:
+            folder: 根目录下的文件夹名
+
+        Returns:
+            文件名列表
+        """
+        entries = self._sftp.listdir("/" + folder)
+        files: list[str] = []
+        for entry in entries:
+            try:
+                attr = self._sftp.stat("/" + folder + "/" + entry)
+                if attr.st_mode & 0o170000 != 0o040000:  # 仅文件，排除子目录
+                    files.append(entry)
+            except (IOError, FileNotFoundError):
+                continue
+        return files
+
     def download_file(
         self,
         remote_path: str,
         local_dir: str,
         version: str,
         progress_callback: Optional[Callable[[int, int], None]] = None,
+        is_custom: bool = False,
     ) -> str:
-        """下载单个文件，支持断点续传检测"""
-        remote_full = f"{REMOTE_BASE_DIR}/{version}/{remote_path}"
+        """下载单个文件，支持断点续传检测
+
+        Args:
+            is_custom: 定制发布模式下远程路径为 /<version>/<remote_path>
+        """
+        if is_custom:
+            remote_full = f"/{version}/{remote_path}"
+        else:
+            remote_full = f"{REMOTE_BASE_DIR}/{version}/{remote_path}"
         local_path = os.path.join(local_dir, os.path.basename(remote_path))
 
         remote_stat = self._sftp.stat(remote_full)

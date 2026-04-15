@@ -78,6 +78,61 @@ class FetchFilesWorker(QThread):
             self.error.emit(f"获取文件列表失败: {e}")
 
 
+class FetchCustomFoldersWorker(QThread):
+    """后台获取根目录下的定制发布文件夹列表"""
+
+    success = pyqtSignal(list)   # folders: list[str]
+    error = pyqtSignal(str)
+
+    def __init__(self, username: str, password: str):
+        super().__init__()
+        self._username = username
+        self._password = password
+
+    def run(self):
+        try:
+            client = SFTPClient(self._username, self._password)
+            client.connect()
+            try:
+                folders = client.get_custom_folders()
+                if not folders:
+                    self.error.emit("未找到定制发布文件夹")
+                else:
+                    self.success.emit(folders)
+            finally:
+                client.disconnect()
+        except Exception as e:
+            self.error.emit(f"获取定制文件夹失败: {e}")
+
+
+class FetchCustomFilesWorker(QThread):
+    """后台获取定制文件夹内的文件列表"""
+
+    success = pyqtSignal(list)   # files: list[str]
+    error = pyqtSignal(str)
+
+    def __init__(self, username: str, password: str, folder: str):
+        super().__init__()
+        self._username = username
+        self._password = password
+        self._folder = folder
+
+    def run(self):
+        try:
+            client = SFTPClient(self._username, self._password)
+            client.connect()
+            try:
+                files = client.get_custom_files(self._folder)
+                if not files:
+                    self.error.emit("该文件夹下未找到文件")
+                else:
+                    self.success.emit(files)
+            finally:
+                client.disconnect()
+        except Exception as e:
+            self.error.emit(f"获取文件列表失败: {e}")
+
+
 class DownloadWorker(QThread):
     """后台下载文件"""
 
@@ -89,7 +144,8 @@ class DownloadWorker(QThread):
     error = pyqtSignal(str)
 
     def __init__(
-        self, version: str, files: list[str], save_dir: str, username: str, password: str
+        self, version: str, files: list[str], save_dir: str,
+        username: str, password: str, is_custom: bool = False,
     ):
         super().__init__()
         self.version = version
@@ -97,6 +153,7 @@ class DownloadWorker(QThread):
         self.save_dir = save_dir
         self._username = username
         self._password = password
+        self._is_custom = is_custom
         self._cancelled = False
 
     def cancel(self):
@@ -124,6 +181,7 @@ class DownloadWorker(QThread):
                         self.save_dir,
                         self.version,
                         progress_callback=progress_cb,
+                        is_custom=self._is_custom,
                     )
                     self.file_completed.emit(filename)
                     self.overall_progress.emit(i + 1, total)
