@@ -9,7 +9,7 @@ REMOTE_BASE_DIR = "/V2 General release"
 # 远程目录中已知的子目录
 SUB_DIRS = [
     "", "Base_driver", "K8s", "Vllm", "Vllm0.13.0_product_images", "vllm", "driver", "container",
-    "SDK", "SDK_product_images", "Pytorch2.5_product_images", "k8s", "doc",
+    "SDK", "SDK_product_images", "Pytorch2.5_product_images", "k8s", "Docs",
 ]
 
 # 自定义下载类别配置
@@ -21,7 +21,7 @@ CUSTOM_CATEGORIES = {
     "pytorch_image": {"label": "Pytorch 镜像", "subdir": "Pytorch2.5_product_images", "arch_filter": True,  "os_filter": True},
     "container":     {"label": "登临容器组件", "subdir": "k8s",                      "arch_filter": True,  "os_filter": True, "name_filter": "container"},
     "vllm_image":    {"label": "vLLM 镜像",    "subdir": "Vllm0.13.0_product_images", "arch_filter": True,  "os_filter": True},
-    "doc":           {"label": "文档",          "subdir": "doc",                      "arch_filter": False, "os_filter": False},
+    "doc":           {"label": "文档",          "subdir": "Docs",                     "arch_filter": False, "os_filter": False},
 }
 
 # 操作系统选项

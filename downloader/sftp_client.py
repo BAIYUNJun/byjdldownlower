@@ -101,7 +101,7 @@ class SFTPClient:
         """检查文件名是否匹配指定操作系统"""
         basename = os.path.basename(filename).lower()
         if os_name == "linux":
-            return "linux" in basename
+            return "linux" in basename or "ubuntu" in basename
         elif os_name == "windows":
             return "win" in basename
         elif os_name == "centos":
