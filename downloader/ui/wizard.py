@@ -31,7 +31,7 @@ class WizardWindow(QWidget):
         self._setup_ui()
 
     def _setup_ui(self):
-        self.setWindowTitle("登临部署包下载工具V0.1")
+        self.setWindowTitle("登临部署包下载工具V0.2")
         self.setMinimumSize(700, 560)
         self.resize(700, 560)
 

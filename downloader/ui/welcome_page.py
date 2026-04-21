@@ -41,7 +41,7 @@ class WelcomePage(QWidget):
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
 
-        subtitle = QLabel("V0.1")
+        subtitle = QLabel("V0.2")
         subtitle.setFont(QFont("Microsoft YaHei", 20))
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setStyleSheet("color: #666666;")

@@ -19,6 +19,8 @@ from downloader.config import (
     REMOTE_BASE_DIR,
 )
 
+DOWNLOAD_CHUNK_SIZE = 32768
+
 
 class SFTPClient:
     """SFTP 客户端，封装 paramiko 连接和文件操作"""
@@ -209,11 +211,13 @@ class SFTPClient:
         version: str,
         progress_callback: Optional[Callable[[int, int], None]] = None,
         is_custom: bool = False,
+        cancel_check: Optional[Callable[[], bool]] = None,
     ) -> str:
-        """下载单个文件，支持断点续传检测
+        """下载单个文件，支持断点续传
 
         Args:
             is_custom: 定制发布模式下远程路径为 /<version>/<remote_path>
+            cancel_check: 取消检查回调，返回 True 表示应停止下载
         """
         if is_custom:
             remote_full = f"/{version}/{remote_path}"
@@ -224,15 +228,46 @@ class SFTPClient:
         remote_stat = self._sftp.stat(remote_full)
         total_size = remote_stat.st_size
 
-        # 断点续传检查
+        resume_offset = 0
         if os.path.exists(local_path):
             local_size = os.path.getsize(local_path)
             if local_size == total_size:
                 if progress_callback:
                     progress_callback(total_size, total_size)
                 return local_path
+            elif 0 < local_size < total_size:
+                resume_offset = local_size
+                if progress_callback:
+                    progress_callback(resume_offset, total_size)
+            elif local_size > total_size:
+                os.remove(local_path)
 
-        self._sftp.get(remote_full, local_path, callback=progress_callback)
+        with self._sftp.open(remote_full, "r") as remote_file:
+            if resume_offset > 0:
+                remote_file.seek(resume_offset)
+
+            with open(local_path, "ab" if resume_offset > 0 else "wb") as local_file:
+                transferred = resume_offset
+                while transferred < total_size:
+                    if cancel_check and cancel_check():
+                        return local_path
+
+                    to_read = min(DOWNLOAD_CHUNK_SIZE, total_size - transferred)
+                    data = remote_file.read(to_read)
+                    if not data:
+                        break
+                    local_file.write(data)
+                    transferred += len(data)
+
+                    if progress_callback:
+                        progress_callback(transferred, total_size)
+
+        if transferred < total_size:
+            raise IOError(
+                f"下载不完整: {os.path.basename(remote_path)} "
+                f"({transferred}/{total_size} bytes)"
+            )
+
         return local_path
 
     def __enter__(self):
