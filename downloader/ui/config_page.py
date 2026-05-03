@@ -42,6 +42,7 @@ class ConfigPage(QWidget):
         self._os_btns: dict[str, SelectionCardButton] = {}
         self._release_type = "standard"
         self._has_custom_folders: bool | None = None  # None=未检测, False=无, True=有
+        self._detect_request_id = 0
         self._standard_request_id = 0
         self._custom_request_id = 0
         self._setup_ui()
@@ -228,6 +229,7 @@ class ConfigPage(QWidget):
 
     def _reset_release_state(self):
         """Reset cached release choices when credentials change."""
+        self._detect_request_id += 1
         self._standard_request_id += 1
         self._custom_request_id += 1
         self._has_custom_folders = None
@@ -244,16 +246,29 @@ class ConfigPage(QWidget):
 
     def _check_custom_folders(self):
         """检测FTP是否有定制文件夹，决定是否显示发布类型切换"""
+        self._detect_request_id += 1
+        request_id = self._detect_request_id
         self.version_status.setText("正在检测服务器...")
         self.refresh_btn.setEnabled(False)
 
         self._fetch_custom_worker = FetchCustomFoldersWorker(self._username, self._password)
-        self._fetch_custom_worker.success.connect(self._on_check_folders_result)
-        self._fetch_custom_worker.error.connect(self._on_check_folders_error)
+        self._fetch_custom_worker.success.connect(
+            lambda folders, request_id=request_id: self._on_check_folders_result(
+                folders, request_id
+            )
+        )
+        self._fetch_custom_worker.error.connect(
+            lambda msg, request_id=request_id: self._on_check_folders_error(
+                msg, request_id
+            )
+        )
         self._fetch_custom_worker.start()
 
-    def _on_check_folders_result(self, folders: list[str]):
+    def _on_check_folders_result(self, folders: list[str], request_id: int):
         """检测结果返回"""
+        if request_id != self._detect_request_id:
+            return
+
         has_custom = len(folders) > 0
         self._has_custom_folders = has_custom
 
@@ -263,8 +278,11 @@ class ConfigPage(QWidget):
         # 继续获取标准版本列表
         self._fetch_versions()
 
-    def _on_check_folders_error(self, msg: str):
+    def _on_check_folders_error(self, msg: str, request_id: int):
         """检测失败，默认不显示切换按钮，直接获取标准版本"""
+        if request_id != self._detect_request_id:
+            return
+
         self._has_custom_folders = False
         self._release_container.setVisible(False)
         self._fetch_versions()
