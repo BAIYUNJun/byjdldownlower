@@ -278,6 +278,9 @@ class ConfigPage(QWidget):
         self._fetch_custom_worker.start()
 
     def _on_versions_loaded(self, versions: list[str]):
+        if self._release_type != "standard":
+            return
+
         self._versions = versions
         self.version_combo.clear()
         has_versions = len(versions) > 0
@@ -292,12 +295,18 @@ class ConfigPage(QWidget):
         self.refresh_btn.setEnabled(True)
 
     def _on_versions_error(self, msg: str):
+        if self._release_type != "standard":
+            return
+
         self.version_status.setText(f"获取失败: {msg}")
         self.refresh_btn.setEnabled(True)
         self.next_btn.setEnabled(False)
         QMessageBox.warning(self, "获取版本失败", msg)
 
     def _on_custom_folders_loaded(self, folders: list[str]):
+        if self._release_type != "custom":
+            return
+
         self._versions = folders
         self.version_combo.clear()
         has_folders = len(folders) > 0
@@ -312,6 +321,9 @@ class ConfigPage(QWidget):
         self.refresh_btn.setEnabled(True)
 
     def _on_custom_folders_error(self, msg: str):
+        if self._release_type != "custom":
+            return
+
         self.version_status.setText(f"获取失败: {msg}")
         self.refresh_btn.setEnabled(True)
         self.next_btn.setEnabled(False)
