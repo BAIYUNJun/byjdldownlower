@@ -42,6 +42,8 @@ class ConfigPage(QWidget):
         self._os_btns: dict[str, SelectionCardButton] = {}
         self._release_type = "standard"
         self._has_custom_folders: bool | None = None  # None=未检测, False=无, True=有
+        self._standard_request_id = 0
+        self._custom_request_id = 0
         self._setup_ui()
 
     def _setup_ui(self):
@@ -208,6 +210,13 @@ class ConfigPage(QWidget):
 
     def on_enter(self, username: str, password: str):
         """页面显示时检测定制文件夹并获取版本列表"""
+        credentials_changed = (
+            bool(self._username or self._password)
+            and (username != self._username or password != self._password)
+        )
+        if credentials_changed:
+            self._reset_release_state()
+
         self._username = username
         self._password = password
 
@@ -216,6 +225,22 @@ class ConfigPage(QWidget):
             self._check_custom_folders()
         elif not self._versions:
             self._fetch_current_list()
+
+    def _reset_release_state(self):
+        """Reset cached release choices when credentials change."""
+        self._standard_request_id += 1
+        self._custom_request_id += 1
+        self._has_custom_folders = None
+        self._versions = []
+        self._release_type = "standard"
+        self._release_segment.set_checked("standard")
+        self._release_container.setVisible(False)
+        self._arch_container.setVisible(True)
+        self._os_container.setVisible(True)
+        self.version_combo.clear()
+        self.version_combo.setEnabled(False)
+        self.next_btn.setEnabled(False)
+        self.version_status.clear()
 
     def _check_custom_folders(self):
         """检测FTP是否有定制文件夹，决定是否显示发布类型切换"""
@@ -253,6 +278,8 @@ class ConfigPage(QWidget):
 
     def _fetch_versions(self):
         """启动后台版本获取（标准发布）"""
+        self._standard_request_id += 1
+        request_id = self._standard_request_id
         self.version_combo.clear()
         self.version_combo.setEnabled(False)
         self.version_status.setText("正在获取版本列表...")
@@ -260,12 +287,22 @@ class ConfigPage(QWidget):
         self.next_btn.setEnabled(False)
 
         self._fetch_worker = FetchVersionsWorker(self._username, self._password)
-        self._fetch_worker.success.connect(self._on_versions_loaded)
-        self._fetch_worker.error.connect(self._on_versions_error)
+        self._fetch_worker.success.connect(
+            lambda versions, request_id=request_id: self._on_versions_loaded(
+                versions, request_id
+            )
+        )
+        self._fetch_worker.error.connect(
+            lambda msg, request_id=request_id: self._on_versions_error(
+                msg, request_id
+            )
+        )
         self._fetch_worker.start()
 
     def _fetch_custom_folders(self):
         """启动后台定制文件夹获取（定制发布）"""
+        self._custom_request_id += 1
+        request_id = self._custom_request_id
         self.version_combo.clear()
         self.version_combo.setEnabled(False)
         self.version_status.setText("正在获取定制文件夹列表...")
@@ -273,12 +310,20 @@ class ConfigPage(QWidget):
         self.next_btn.setEnabled(False)
 
         self._fetch_custom_worker = FetchCustomFoldersWorker(self._username, self._password)
-        self._fetch_custom_worker.success.connect(self._on_custom_folders_loaded)
-        self._fetch_custom_worker.error.connect(self._on_custom_folders_error)
+        self._fetch_custom_worker.success.connect(
+            lambda folders, request_id=request_id: self._on_custom_folders_loaded(
+                folders, request_id
+            )
+        )
+        self._fetch_custom_worker.error.connect(
+            lambda msg, request_id=request_id: self._on_custom_folders_error(
+                msg, request_id
+            )
+        )
         self._fetch_custom_worker.start()
 
-    def _on_versions_loaded(self, versions: list[str]):
-        if self._release_type != "standard":
+    def _on_versions_loaded(self, versions: list[str], request_id: int):
+        if self._release_type != "standard" or request_id != self._standard_request_id:
             return
 
         self._versions = versions
@@ -294,8 +339,8 @@ class ConfigPage(QWidget):
         self.next_btn.setEnabled(has_versions)
         self.refresh_btn.setEnabled(True)
 
-    def _on_versions_error(self, msg: str):
-        if self._release_type != "standard":
+    def _on_versions_error(self, msg: str, request_id: int):
+        if self._release_type != "standard" or request_id != self._standard_request_id:
             return
 
         self.version_status.setText(f"获取失败: {msg}")
@@ -303,8 +348,8 @@ class ConfigPage(QWidget):
         self.next_btn.setEnabled(False)
         QMessageBox.warning(self, "获取版本失败", msg)
 
-    def _on_custom_folders_loaded(self, folders: list[str]):
-        if self._release_type != "custom":
+    def _on_custom_folders_loaded(self, folders: list[str], request_id: int):
+        if self._release_type != "custom" or request_id != self._custom_request_id:
             return
 
         self._versions = folders
@@ -320,8 +365,8 @@ class ConfigPage(QWidget):
         self.next_btn.setEnabled(has_folders)
         self.refresh_btn.setEnabled(True)
 
-    def _on_custom_folders_error(self, msg: str):
-        if self._release_type != "custom":
+    def _on_custom_folders_error(self, msg: str, request_id: int):
+        if self._release_type != "custom" or request_id != self._custom_request_id:
             return
 
         self.version_status.setText(f"获取失败: {msg}")
