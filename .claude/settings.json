@@ -42,7 +42,8 @@
       "Bash(python3 -m PyInstaller --version)",
       "Bash(rtk pip *)",
       "Bash(python -m PyInstaller \"build_win/登临部署包下载工具.spec\" --clean -y --distpath ./dist_win --workpath ./build_win)",
-      "Bash(python -m PyInstaller \"build_win/登临部署包下载工具.spec\" --clean -y --distpath \"C:/Users/denglinAI/tmp/dist_win\" --workpath \"C:/Users/denglinAI/tmp/build_win\")"
+      "Bash(python -m PyInstaller \"build_win/登临部署包下载工具.spec\" --clean -y --distpath \"C:/Users/denglinAI/tmp/dist_win\" --workpath \"C:/Users/denglinAI/tmp/build_win\")",
+      "Bash(rtk git *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\denglinAI\\tmp"
