@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import os
+import time
 
 from PyQt6.QtCore import QThread, pyqtSignal
 
 from downloader.sftp_client import SFTPClient
+
+MAX_RETRIES_PER_FILE = 3
+RETRY_DELAY_SECONDS = 2
 
 
 class FetchVersionsWorker(QThread):
@@ -134,11 +138,12 @@ class FetchCustomFilesWorker(QThread):
 
 
 class DownloadWorker(QThread):
-    """后台下载文件"""
+    """后台下载文件，支持断点续传和单文件重试"""
 
     file_progress = pyqtSignal(str, int, int)  # filename, transferred, total
     overall_progress = pyqtSignal(int, int)     # completed_count, total_count
     file_completed = pyqtSignal(str)            # filename
+    file_failed = pyqtSignal(str, str)          # filename, error_message
     log_message = pyqtSignal(str)               # message
     all_done = pyqtSignal()
     error = pyqtSignal(str)
@@ -155,6 +160,16 @@ class DownloadWorker(QThread):
         self._password = password
         self._is_custom = is_custom
         self._cancelled = False
+        self._failed_files: list[tuple[str, str]] = []
+        self._completed_files: list[str] = []
+
+    @property
+    def failed_files(self) -> list[tuple[str, str]]:
+        return self._failed_files
+
+    @property
+    def completed_files(self) -> list[str]:
+        return self._completed_files
 
     def cancel(self):
         self._cancelled = True
@@ -173,22 +188,60 @@ class DownloadWorker(QThread):
                     filename = os.path.basename(file_path)
                     self.log_message.emit(f"正在下载 ({i + 1}/{total}): {filename}")
 
-                    def progress_cb(transferred: int, total_bytes: int, fn=filename):
-                        self.file_progress.emit(fn, transferred, total_bytes)
+                    succeeded = False
+                    last_error = ""
+                    for attempt in range(1, MAX_RETRIES_PER_FILE + 1):
+                        if self._cancelled:
+                            self.log_message.emit("下载已取消")
+                            return
 
-                    client.download_file(
-                        file_path,
-                        self.save_dir,
-                        self.version,
-                        progress_callback=progress_cb,
-                        is_custom=self._is_custom,
+                        try:
+                            def progress_cb(transferred: int, total_bytes: int, fn=filename):
+                                self.file_progress.emit(fn, transferred, total_bytes)
+
+                            client.download_file(
+                                file_path,
+                                self.save_dir,
+                                self.version,
+                                progress_callback=progress_cb,
+                                is_custom=self._is_custom,
+                                cancel_check=lambda: self._cancelled,
+                            )
+
+                            if self._cancelled:
+                                self.log_message.emit("下载已取消")
+                                return
+
+                            self.file_completed.emit(filename)
+                            self.overall_progress.emit(i + 1, total)
+                            self._completed_files.append(filename)
+                            succeeded = True
+                            break
+
+                        except Exception as e:
+                            last_error = str(e)
+                            if attempt < MAX_RETRIES_PER_FILE:
+                                self.log_message.emit(
+                                    f"  {filename} 下载失败 (第{attempt}次)，"
+                                    f"{RETRY_DELAY_SECONDS}秒后重试: {e}"
+                                )
+                                time.sleep(RETRY_DELAY_SECONDS)
+
+                    if not succeeded:
+                        self.log_message.emit(
+                            f"  {filename} 下载失败，已重试{MAX_RETRIES_PER_FILE}次: {last_error}"
+                        )
+                        self._failed_files.append((filename, last_error))
+                        self.file_failed.emit(filename, last_error)
+
+                if self._failed_files:
+                    self.log_message.emit(
+                        f"下载完成，{len(self._failed_files)} 个文件失败"
                     )
-                    self.file_completed.emit(filename)
-                    self.overall_progress.emit(i + 1, total)
-
-                self.log_message.emit("所有文件下载完成!")
+                else:
+                    self.log_message.emit("所有文件下载完成!")
                 self.all_done.emit()
             finally:
                 client.disconnect()
         except Exception as e:
-            self.error.emit(f"下载失败: {e}")
+            self.error.emit(f"连接失败: {e}")

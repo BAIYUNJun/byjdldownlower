@@ -32,7 +32,7 @@ class WizardWindow(QWidget):
         self._setup_ui()
 
     def _setup_ui(self):
-        self.setWindowTitle("登临部署包下载工具V0.1")
+        self.setWindowTitle("登临部署包下载工具V0.2")
         self.setMinimumSize(860, 600)
         self.resize(940, 640)
 
@@ -90,7 +90,7 @@ class WizardWindow(QWidget):
         app_name_label.setStyleSheet(f"color: {Colors.SIDEBAR_MUTED};")
         layout.addWidget(app_name_label)
 
-        version_label = QLabel("V0.1")
+        version_label = QLabel("V0.2")
         version_label.setFont(font(9))
         version_label.setStyleSheet(f"color: {Colors.SIDEBAR_MUTED};")
         layout.addWidget(version_label)

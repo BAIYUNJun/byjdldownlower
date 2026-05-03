@@ -30,7 +30,22 @@
       "Bash(pip3 list:*)",
       "Bash(pyinstaller build/DengLin下载工具.spec --clean)",
       "Bash(python3 -m PyInstaller build/DengLin下载工具.spec --clean)",
-      "Bash(python3 -m PyInstaller build/DengLin下载工具.spec --clean -y)"
+      "Bash(python3 -m PyInstaller build/DengLin下载工具.spec --clean -y)",
+      "Bash(rtk go *)",
+      "Bash(rtk ls *)",
+      "Bash(python -m py_compile downloader/sftp_client.py)",
+      "Bash(python -m py_compile downloader/workers.py)",
+      "Bash(python -m py_compile downloader/ui/download_page.py)",
+      "Bash(pyinstaller \"build_win/登临部署包下载工具.spec\" --clean -y --distpath ./dist_win --workpath ./build_win)",
+      "Bash(where pyinstaller *)",
+      "Bash(python -m PyInstaller --version)",
+      "Bash(python3 -m PyInstaller --version)",
+      "Bash(rtk pip *)",
+      "Bash(python -m PyInstaller \"build_win/登临部署包下载工具.spec\" --clean -y --distpath ./dist_win --workpath ./build_win)",
+      "Bash(python -m PyInstaller \"build_win/登临部署包下载工具.spec\" --clean -y --distpath \"C:/Users/denglinAI/tmp/dist_win\" --workpath \"C:/Users/denglinAI/tmp/build_win\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\denglinAI\\tmp"
     ]
   }
 }

@@ -47,6 +47,8 @@ class DownloadPage(QWidget):
         self._current_file_start_time: float = 0
         self._current_file_transferred: int = 0
         self._release_type: str = "standard"
+        self._failed_files: list[tuple[str, str]] = []
+        self._completed_files: list[str] = []
         self._setup_ui()
 
     def _setup_ui(self):
@@ -251,6 +253,8 @@ class DownloadPage(QWidget):
         self._matches = {}
         self._all_files = []
         self._clear_file_list()
+        self._failed_files = []
+        self._completed_files = []
         self.overall_progress.setValue(0)
         self.file_progress.setValue(0)
         self.current_file_label.setText("当前文件: -")
@@ -332,9 +336,15 @@ class DownloadPage(QWidget):
             QMessageBox.warning(self, "目录无效", "选择的目录不存在")
             return
 
-        all_matched = []
-        for files in self._matches.values():
-            all_matched.extend(files)
+        if self._failed_files:
+            all_matched = self._reconstruct_remote_paths(
+                [f[0] for f in self._failed_files]
+            )
+            self._failed_files = []
+        else:
+            all_matched = []
+            for files in self._matches.values():
+                all_matched.extend(files)
 
         if not all_matched:
             QMessageBox.warning(self, "无文件", "没有匹配的文件可下载")
@@ -353,6 +363,7 @@ class DownloadPage(QWidget):
         self._download_worker.file_progress.connect(self._on_file_progress)
         self._download_worker.overall_progress.connect(self._on_overall_progress)
         self._download_worker.file_completed.connect(self._on_file_completed)
+        self._download_worker.file_failed.connect(self._on_file_failed)
         self._download_worker.log_message.connect(self._log)
         self._download_worker.all_done.connect(self._on_all_done)
         self._download_worker.error.connect(self._on_download_error)
@@ -366,9 +377,8 @@ class DownloadPage(QWidget):
             pct = transferred / total * 100
             self.file_progress.setFormat(f"{pct:.1f}%")
 
-            # 使用当前文件维度的速度计算
             elapsed = time.time() - self._current_file_start_time
-            if elapsed > 0.5 and transferred > 0:
+            if elapsed > 0.5 and transferred > self._current_file_transferred:
                 speed = (transferred - self._current_file_transferred) / elapsed
                 if speed > 0:
                     self.speed_label.setText(self._format_size(speed) + "/s")
@@ -381,22 +391,53 @@ class DownloadPage(QWidget):
 
     def _on_file_completed(self, filename: str):
         self._log(f"✓ {filename} 下载完成")
-        # 重置当前文件的计时
         self._current_file_start_time = time.time()
         self._current_file_transferred = 0
 
+    def _on_file_failed(self, filename: str, error_msg: str):
+        self._log(f"✗ {filename} 下载失败: {error_msg}")
+
     def _on_all_done(self):
-        self.download_btn.setText("已完成")
-        self.download_btn.setEnabled(False)
-        self.open_folder_btn.setVisible(True)
-        self.speed_label.setText("")
-        QMessageBox.information(self, "下载完成", "所有文件已下载完成!")
+        if self._download_worker:
+            self._failed_files = self._download_worker.failed_files
+            self._completed_files = self._download_worker.completed_files
+
+        if self._failed_files:
+            self.download_btn.setText("重试失败文件")
+            self.download_btn.setEnabled(True)
+            self.open_folder_btn.setVisible(True)
+            self.speed_label.setText("")
+            failed_names = "\n".join(f"  - {f[0]}" for f in self._failed_files)
+            QMessageBox.warning(
+                self, "部分文件下载失败",
+                f"以下文件下载失败:\n{failed_names}\n\n"
+                f"点击\"重试失败文件\"按钮重新下载。"
+            )
+        else:
+            self.download_btn.setText("已完成")
+            self.download_btn.setEnabled(False)
+            self.open_folder_btn.setVisible(True)
+            self.speed_label.setText("")
+            QMessageBox.information(self, "下载完成", "所有文件已下载完成!")
 
     def _on_download_error(self, msg: str):
         self._log(f"错误: {msg}")
         self.download_btn.setText("重试下载")
         self.download_btn.setEnabled(True)
         QMessageBox.critical(self, "下载失败", msg)
+
+    def _reconstruct_remote_paths(self, filenames: list[str]) -> list[str]:
+        name_to_path = {}
+        for files in self._matches.values():
+            for f in files:
+                name_to_path[os.path.basename(f)] = f
+        result = []
+        for fn in filenames:
+            if fn in name_to_path:
+                result.append(name_to_path[fn])
+            else:
+                result.append(fn)
+        return result
 
     def _open_folder(self):
         path = self.dir_edit.text().strip()
