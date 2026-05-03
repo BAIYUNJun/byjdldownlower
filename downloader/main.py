@@ -18,48 +18,26 @@ def main():
     # 全局样式
     app.setStyleSheet("""
         QWidget {
-            font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+            font-family: "Microsoft YaHei", "PingFang SC", Helvetica, sans-serif;
         }
         QProgressBar {
-            border: 1px solid #CCCCCC;
-            border-radius: 4px;
+            border: 1px solid #D8DEE8;
+            border-radius: 8px;
             text-align: center;
-            background-color: #F0F0F0;
-            min-height: 20px;
+            background: #F8FAFC;
+            min-height: 22px;
         }
         QProgressBar::chunk {
-            background-color: #4A90D9;
-            border-radius: 3px;
+            background: #2563EB;
+            border-radius: 7px;
         }
-        QComboBox {
-            border: 1px solid #CCCCCC;
-            border-radius: 4px;
-            padding: 4px 8px;
-            background: white;
-            color: #333333;
-        }
-        QComboBox::drop-down {
-            border: none;
-        }
-        QComboBox QAbstractItemView {
-            background-color: white;
-            color: #333333;
-            selection-background-color: #E8F0FE;
-            selection-color: #333333;
-        }
-        QPlainTextEdit {
-            border: 1px solid #CCCCCC;
-            border-radius: 4px;
-        }
-        QLineEdit {
-            border: 1px solid #CCCCCC;
-            border-radius: 4px;
-            padding: 4px 8px;
+        QCheckBox {
+            spacing: 8px;
+            color: #111827;
         }
         QScrollArea {
-            border: 1px solid #CCCCCC;
-            border-radius: 4px;
-            background: white;
+            border: none;
+            background: transparent;
         }
     """)
 
