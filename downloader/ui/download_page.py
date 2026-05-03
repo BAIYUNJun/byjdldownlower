@@ -64,6 +64,7 @@ class DownloadPage(QWidget):
 
         self.file_list_area = QScrollArea()
         self.file_list_area.setWidgetResizable(True)
+        self.file_list_area.setMinimumHeight(96)
         self.file_list_area.setMaximumHeight(150)
         self.file_list_area.setStyleSheet(f"""
             QScrollArea {{
@@ -271,6 +272,7 @@ class DownloadPage(QWidget):
             for f in files:
                 item = ElidedLabel(f"[{label}] {os.path.basename(f)}")
                 item.setFont(font(10))
+                item.setMinimumHeight(22)
                 item.setStyleSheet(f"color: {Colors.TEXT};")
                 self.file_list_layout.addWidget(item)
 
@@ -282,6 +284,7 @@ class DownloadPage(QWidget):
             for f in all_files[:20]:
                 item = ElidedLabel(f)
                 item.setFont(font(10))
+                item.setMinimumHeight(22)
                 item.setStyleSheet(f"color: {Colors.TEXT_MUTED};")
                 self.file_list_layout.addWidget(item)
             self._log(f"警告: 未匹配到文件。远程共 {len(all_files)} 个文件。")
@@ -295,6 +298,7 @@ class DownloadPage(QWidget):
         for f in files:
             item = ElidedLabel(os.path.basename(f))
             item.setFont(font(10))
+            item.setMinimumHeight(22)
             item.setStyleSheet(f"color: {Colors.TEXT};")
             self.file_list_layout.addWidget(item)
 

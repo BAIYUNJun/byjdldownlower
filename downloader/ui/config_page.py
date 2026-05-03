@@ -160,10 +160,7 @@ class ConfigPage(QWidget):
         self.version_combo.setMinimumHeight(38)
         self.version_combo.setStyleSheet(input_style())
         self.version_combo.setEnabled(False)
-        try:
-            self.version_combo.setPlaceholderText("请选择 SDK 版本...")
-        except AttributeError:
-            pass
+        self.version_combo.setPlaceholderText("请选择 SDK 版本...")
         ver_layout.addWidget(self.version_combo, 1)
 
         self.refresh_btn = QPushButton("刷新")
