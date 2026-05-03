@@ -23,6 +23,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from downloader.ui.components import ElidedLabel, PageHeader
+from downloader.ui.theme import Colors, button_style, font, input_style
 from downloader.workers import DownloadWorker, FetchFilesWorker
 
 
@@ -49,42 +51,65 @@ class DownloadPage(QWidget):
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(12)
-        layout.setContentsMargins(60, 30, 60, 30)
+        layout.setSpacing(16)
+        layout.setContentsMargins(44, 34, 44, 28)
 
-        # 标题
-        title = QLabel("下载文件")
-        title.setFont(QFont("Microsoft YaHei", 14, QFont.Weight.Bold))
-        layout.addWidget(title)
+        layout.addWidget(PageHeader("下载任务", "确认文件列表、保存目录和下载进度"))
 
         # 匹配的文件列表
-        self.file_list_label = QLabel("匹配到的文件:")
-        self.file_list_label.setFont(QFont("Microsoft YaHei", 11))
+        self.file_list_label = QLabel("匹配到的文件")
+        self.file_list_label.setFont(font(11, QFont.Weight.Bold))
+        self.file_list_label.setStyleSheet(f"color: {Colors.TEXT};")
         layout.addWidget(self.file_list_label)
 
         self.file_list_area = QScrollArea()
         self.file_list_area.setWidgetResizable(True)
-        self.file_list_area.setMaximumHeight(140)
+        self.file_list_area.setMaximumHeight(150)
+        self.file_list_area.setStyleSheet(f"""
+            QScrollArea {{
+                background-color: {Colors.SURFACE};
+                border: 1px solid {Colors.BORDER};
+                border-radius: 8px;
+            }}
+            QScrollArea > QWidget > QWidget {{
+                background-color: {Colors.SURFACE};
+            }}
+            QScrollBar:vertical {{
+                background: {Colors.SURFACE_MUTED};
+                width: 10px;
+                margin: 2px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {Colors.BORDER_HOVER};
+                border-radius: 4px;
+            }}
+        """)
         self.file_list_content = QWidget()
         self.file_list_layout = QVBoxLayout(self.file_list_content)
         self.file_list_layout.setSpacing(4)
-        self.file_list_layout.setContentsMargins(8, 8, 8, 8)
+        self.file_list_layout.setContentsMargins(10, 8, 10, 8)
         self.file_list_area.setWidget(self.file_list_content)
         layout.addWidget(self.file_list_area)
 
         # 保存目录
         dir_layout = QHBoxLayout()
+        dir_layout.setSpacing(10)
         dir_label = QLabel("保存到:")
-        dir_label.setFont(QFont("Microsoft YaHei", 11))
+        dir_label.setFont(font(10, QFont.Weight.Bold))
+        dir_label.setStyleSheet(f"color: {Colors.TEXT};")
         dir_layout.addWidget(dir_label)
 
         self.dir_edit = QLineEdit()
-        self.dir_edit.setFont(QFont("Microsoft YaHei", 10))
+        self.dir_edit.setFont(font(10))
+        self.dir_edit.setMinimumHeight(38)
+        self.dir_edit.setStyleSheet(input_style())
         self.dir_edit.setPlaceholderText("请选择保存目录...")
         dir_layout.addWidget(self.dir_edit, 1)
 
         self.browse_btn = QPushButton("浏览")
-        self.browse_btn.setFixedSize(70, 32)
+        self.browse_btn.setFont(font(10, QFont.Weight.Bold))
+        self.browse_btn.setMinimumSize(74, 38)
+        self.browse_btn.setStyleSheet(button_style("secondary"))
         self.browse_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.browse_btn.clicked.connect(self._browse_dir)
         dir_layout.addWidget(self.browse_btn)
@@ -99,8 +124,10 @@ class DownloadPage(QWidget):
         # 进度区域
         # 总体进度
         overall_layout = QHBoxLayout()
+        overall_layout.setSpacing(10)
         self.overall_label = QLabel("总进度:")
-        self.overall_label.setFont(QFont("Microsoft YaHei", 11))
+        self.overall_label.setFont(font(10, QFont.Weight.Bold))
+        self.overall_label.setStyleSheet(f"color: {Colors.TEXT};")
         overall_layout.addWidget(self.overall_label)
         self.overall_progress = QProgressBar()
         self.overall_progress.setTextVisible(True)
@@ -108,18 +135,23 @@ class DownloadPage(QWidget):
         layout.addLayout(overall_layout)
 
         # 当前文件进度
+        self.current_file_label = ElidedLabel("当前文件: -")
+        self.current_file_label.setFont(font(10))
+        self.current_file_label.setStyleSheet(f"color: {Colors.TEXT_MUTED};")
+        layout.addWidget(self.current_file_label)
+
         file_layout = QHBoxLayout()
-        self.current_file_label = QLabel("当前文件:")
-        self.current_file_label.setFont(QFont("Microsoft YaHei", 10))
-        file_layout.addWidget(self.current_file_label)
+        file_layout.setSpacing(10)
 
         self.file_progress = QProgressBar()
         self.file_progress.setTextVisible(True)
         file_layout.addWidget(self.file_progress, 1)
 
         self.speed_label = QLabel("")
-        self.speed_label.setStyleSheet("color: #888888; font-size: 11px;")
+        self.speed_label.setFont(font(9))
+        self.speed_label.setStyleSheet(f"color: {Colors.TEXT_MUTED};")
         self.speed_label.setFixedWidth(120)
+        self.speed_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         file_layout.addWidget(self.speed_label)
         layout.addLayout(file_layout)
 
@@ -127,48 +159,40 @@ class DownloadPage(QWidget):
         self.log_box = QPlainTextEdit()
         self.log_box.setReadOnly(True)
         self.log_box.setFont(QFont("Consolas", 10))
-        self.log_box.setMaximumHeight(150)
-        self.log_box.setStyleSheet("background-color: #1E1E1E; color: #CCCCCC;")
+        self.log_box.setMaximumHeight(160)
+        self.log_box.setStyleSheet(f"""
+            QPlainTextEdit {{
+                background-color: {Colors.LOG_BG};
+                color: {Colors.LOG_TEXT};
+                border: none;
+                border-radius: 8px;
+                padding: 10px;
+            }}
+        """)
         layout.addWidget(self.log_box, 1)
 
         # 底部按钮
         btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(12)
 
         self.back_btn = QPushButton("上一步")
-        self.back_btn.setFixedSize(120, 40)
-        self.back_btn.setFont(QFont("Microsoft YaHei", 11))
-        self.back_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #F0F0F0; border: 1px solid #CCCCCC; border-radius: 6px;
-            }
-            QPushButton:hover { background-color: #E0E0E0; }
-        """)
+        self.back_btn.setMinimumSize(104, 40)
+        self.back_btn.setFont(font(10))
+        self.back_btn.setStyleSheet(button_style("secondary"))
         self.back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.back_btn.clicked.connect(self.back_clicked.emit)
 
         self.download_btn = QPushButton("开始下载")
-        self.download_btn.setFixedSize(140, 40)
-        self.download_btn.setFont(QFont("Microsoft YaHei", 12))
-        self.download_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4A90D9; color: white; border: none; border-radius: 6px;
-            }
-            QPushButton:hover { background-color: #3A7BC8; }
-            QPushButton:pressed { background-color: #2E6AB5; }
-            QPushButton:disabled { background-color: #AAAAAA; }
-        """)
+        self.download_btn.setMinimumSize(124, 40)
+        self.download_btn.setFont(font(10, QFont.Weight.Bold))
+        self.download_btn.setStyleSheet(button_style("primary"))
         self.download_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.download_btn.clicked.connect(self._start_download)
 
         self.open_folder_btn = QPushButton("打开文件夹")
-        self.open_folder_btn.setFixedSize(120, 40)
-        self.open_folder_btn.setFont(QFont("Microsoft YaHei", 11))
-        self.open_folder_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #5CB85C; color: white; border: none; border-radius: 6px;
-            }
-            QPushButton:hover { background-color: #4CAE4C; }
-        """)
+        self.open_folder_btn.setMinimumSize(112, 40)
+        self.open_folder_btn.setFont(font(10, QFont.Weight.Bold))
+        self.open_folder_btn.setStyleSheet(button_style("success"))
         self.open_folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.open_folder_btn.clicked.connect(self._open_folder)
         self.open_folder_btn.setVisible(False)
@@ -244,17 +268,20 @@ class DownloadPage(QWidget):
             label = self._category_labels.get(cat_key, cat_key)
             total += len(files)
             for f in files:
-                item = QLabel(f"  [{label}] {os.path.basename(f)}")
-                item.setFont(QFont("Microsoft YaHei", 10))
+                item = ElidedLabel(f"[{label}] {os.path.basename(f)}")
+                item.setFont(font(10))
+                item.setStyleSheet(f"color: {Colors.TEXT};")
                 self.file_list_layout.addWidget(item)
 
         if total == 0:
             no_match = QLabel("未找到匹配文件。所有远程文件:")
-            no_match.setStyleSheet("color: #D9534F;")
+            no_match.setFont(font(10, QFont.Weight.Bold))
+            no_match.setStyleSheet(f"color: {Colors.ERROR};")
             self.file_list_layout.addWidget(no_match)
             for f in all_files[:20]:
-                item = QLabel(f"  {f}")
-                item.setStyleSheet("color: #888888; font-size: 10px;")
+                item = ElidedLabel(f)
+                item.setFont(font(10))
+                item.setStyleSheet(f"color: {Colors.TEXT_MUTED};")
                 self.file_list_layout.addWidget(item)
             self._log(f"警告: 未匹配到文件。远程共 {len(all_files)} 个文件。")
         else:
@@ -265,8 +292,9 @@ class DownloadPage(QWidget):
         """显示文件列表到UI（定制模式使用）"""
         self._clear_file_list()
         for f in files:
-            item = QLabel(f"  {os.path.basename(f)}")
-            item.setFont(QFont("Microsoft YaHei", 10))
+            item = ElidedLabel(os.path.basename(f))
+            item.setFont(font(10))
+            item.setStyleSheet(f"color: {Colors.TEXT};")
             self.file_list_layout.addWidget(item)
 
     def _on_files_error(self, msg: str):
@@ -339,6 +367,8 @@ class DownloadPage(QWidget):
                 speed = (transferred - self._current_file_transferred) / elapsed
                 if speed > 0:
                     self.speed_label.setText(self._format_size(speed) + "/s")
+                self._current_file_start_time = time.time()
+                self._current_file_transferred = transferred
 
     def _on_overall_progress(self, completed: int, total: int):
         self.overall_progress.setValue(completed)
@@ -349,13 +379,6 @@ class DownloadPage(QWidget):
         # 重置当前文件的计时
         self._current_file_start_time = time.time()
         self._current_file_transferred = 0
-
-    def _on_overall_progress(self, completed: int, total: int):
-        self.overall_progress.setValue(completed)
-        self.overall_progress.setFormat(f"{completed}/{total}")
-
-    def _on_file_completed(self, filename: str):
-        self._log(f"✓ {filename} 下载完成")
 
     def _on_all_done(self):
         self.download_btn.setText("已完成")
