@@ -17,6 +17,8 @@ from PyQt6.QtWidgets import (
 )
 
 from downloader.config import CUSTOM_CATEGORIES, OS_DISABLED_CATEGORIES, PRESETS
+from downloader.ui.components import FooterActions, PageHeader, SelectionCardButton
+from downloader.ui.theme import Colors, font
 from downloader.workers import FetchCustomFilesWorker
 
 
@@ -44,18 +46,16 @@ class ModeSelectionPage(QWidget):
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(16)
-        layout.setContentsMargins(60, 30, 60, 30)
+        layout.setSpacing(18)
+        layout.setContentsMargins(44, 34, 44, 28)
 
-        # 标题
-        self.title = QLabel("选择下载内容")
-        self.title.setFont(QFont("Microsoft YaHei", 14, QFont.Weight.Bold))
-        layout.addWidget(self.title)
+        self.header = PageHeader("选择下载内容", "选择预设或手动勾选组件")
+        layout.addWidget(self.header)
 
         # 当前选择信息
         self.info_label = QLabel("")
-        self.info_label.setFont(QFont("Microsoft YaHei", 10))
-        self.info_label.setStyleSheet("color: #888888;")
+        self.info_label.setFont(font(10))
+        self.info_label.setStyleSheet(f"color: {Colors.TEXT_MUTED};")
         layout.addWidget(self.info_label)
 
         # === 预设按钮区域（标准发布） ===
@@ -65,35 +65,17 @@ class ModeSelectionPage(QWidget):
         preset_outer.setSpacing(8)
 
         self.preset_title = QLabel("快速选择")
-        self.preset_title.setFont(QFont("Microsoft YaHei", 12, QFont.Weight.Bold))
+        self.preset_title.setFont(font(12, QFont.Weight.Bold))
         preset_outer.addWidget(self.preset_title)
 
         self.preset_layout = QHBoxLayout()
         self.preset_layout.setSpacing(16)
 
         self._preset_group = QButtonGroup(self)
+        self._preset_group.setExclusive(True)
         for key, preset in PRESETS.items():
-            btn = QPushButton(preset["label"])
-            btn.setFixedSize(160, 50)
-            btn.setFont(QFont("Microsoft YaHei", 12))
-            btn.setCheckable(True)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #F8F8F8;
-                    border: 2px solid #DDDDDD;
-                    border-radius: 8px;
-                    color: #333333;
-                }
-                QPushButton:hover {
-                    border-color: #AAAAAA;
-                }
-                QPushButton:checked {
-                    background-color: #E8F0FE;
-                    border: 2px solid #4A90D9;
-                    color: #4A90D9;
-                }
-            """)
+            btn = SelectionCardButton(preset["label"])
+            btn.setMinimumWidth(160)
             btn.clicked.connect(lambda checked, k=key: self._on_preset_clicked(k))
             self._preset_group.addButton(btn)
             self._preset_btns[key] = btn
@@ -113,7 +95,7 @@ class ModeSelectionPage(QWidget):
         cat_outer.setSpacing(8)
 
         cat_title = QLabel("下载组件")
-        cat_title.setFont(QFont("Microsoft YaHei", 12, QFont.Weight.Bold))
+        cat_title.setFont(font(12, QFont.Weight.Bold))
         cat_outer.addWidget(cat_title)
 
         cat_container = QWidget()
@@ -131,7 +113,7 @@ class ModeSelectionPage(QWidget):
         for i, cat_key in enumerate(cat_keys):
             cat_config = CUSTOM_CATEGORIES[cat_key]
             cb = QCheckBox(cat_config["label"])
-            cb.setFont(QFont("Microsoft YaHei", 11))
+            cb.setFont(font(11))
             cb.setCursor(Qt.CursorShape.PointingHandCursor)
             cb.setStyleSheet("QCheckBox { spacing: 6px; }")
             self._category_cbs[cat_key] = cb
@@ -157,7 +139,7 @@ class ModeSelectionPage(QWidget):
         custom_outer.setSpacing(8)
 
         self._custom_title = QLabel("选择要下载的文件")
-        self._custom_title.setFont(QFont("Microsoft YaHei", 12, QFont.Weight.Bold))
+        self._custom_title.setFont(font(12, QFont.Weight.Bold))
         custom_outer.addWidget(self._custom_title)
 
         self._custom_scroll = QScrollArea()
@@ -171,7 +153,8 @@ class ModeSelectionPage(QWidget):
         custom_outer.addWidget(self._custom_scroll)
 
         self._custom_status = QLabel("")
-        self._custom_status.setStyleSheet("color: #888888; font-size: 12px;")
+        self._custom_status.setFont(font(10))
+        self._custom_status.setStyleSheet(f"color: {Colors.TEXT_MUTED};")
         custom_outer.addWidget(self._custom_status)
 
         self._custom_container.setVisible(False)
@@ -180,44 +163,12 @@ class ModeSelectionPage(QWidget):
         layout.addStretch(1)
 
         # === 底部按钮 ===
-        btn_layout = QHBoxLayout()
-
-        self.back_btn = QPushButton("上一步")
-        self.back_btn.setFixedSize(120, 40)
-        self.back_btn.setFont(QFont("Microsoft YaHei", 11))
-        self.back_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #F0F0F0;
-                border: 1px solid #CCCCCC;
-                border-radius: 6px;
-            }
-            QPushButton:hover { background-color: #E0E0E0; }
-        """)
-        self.back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.footer = FooterActions()
+        self.back_btn = self.footer.back_btn
         self.back_btn.clicked.connect(self.back_clicked.emit)
-
-        self.next_btn = QPushButton("下一步")
-        self.next_btn.setFixedSize(120, 40)
-        self.next_btn.setFont(QFont("Microsoft YaHei", 11))
-        self.next_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4A90D9;
-                color: white;
-                border: none;
-                border-radius: 6px;
-            }
-            QPushButton:hover { background-color: #3A7BC8; }
-            QPushButton:pressed { background-color: #2E6AB5; }
-            QPushButton:disabled { background-color: #AAAAAA; }
-        """)
-        self.next_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.next_btn = self.footer.next_btn
         self.next_btn.clicked.connect(self._on_next)
-
-        btn_layout.addStretch(1)
-        btn_layout.addWidget(self.back_btn)
-        btn_layout.addSpacing(12)
-        btn_layout.addWidget(self.next_btn)
-        layout.addLayout(btn_layout)
+        layout.addWidget(self.footer)
 
     def on_enter(self, arch: str, version: str, os_name: str,
                  username: str, password: str, release_type: str = "standard"):
@@ -231,8 +182,10 @@ class ModeSelectionPage(QWidget):
 
         # 更新信息标签
         if release_type == "custom":
+            self.header.set_text("选择下载内容", "从定制发布文件夹中选择需要下载的文件")
             self.info_label.setText(f"当前: 定制发布 | {version}")
         else:
+            self.header.set_text("选择下载内容", "选择预设或手动勾选标准发布组件")
             arch_display = "x86_64" if arch == "x86" else "ARM64"
             os_display = os_name.capitalize()
             self.info_label.setText(f"当前: {arch_display} | {os_display} | {version}")
@@ -259,8 +212,12 @@ class ModeSelectionPage(QWidget):
                 cb.setEnabled(not is_restricted)
                 if is_restricted:
                     cb.setChecked(False)
+                    cb.setToolTip("当前操作系统不支持该组件")
+                else:
+                    cb.setToolTip("")
             else:
                 cb.setEnabled(True)
+                cb.setToolTip("")
 
         self._preset_group.setExclusive(False)
         for btn in self._preset_btns.values():
@@ -297,9 +254,11 @@ class ModeSelectionPage(QWidget):
         self._clear_custom_checkboxes()
         for fname in files:
             cb = QCheckBox(fname)
-            cb.setFont(QFont("Microsoft YaHei", 10))
+            cb.setFont(font(10))
+            cb.setMinimumHeight(26)
+            cb.setToolTip(fname)
             cb.setCursor(Qt.CursorShape.PointingHandCursor)
-            cb.setStyleSheet("QCheckBox { spacing: 6px; }")
+            cb.setStyleSheet("QCheckBox { spacing: 8px; }")
             self._custom_content_layout.addWidget(cb)
             self._custom_file_cbs.append(cb)
 
