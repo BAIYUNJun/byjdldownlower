@@ -1,1 +1,16 @@
 .superpowers/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local build artifacts
+build/*/
+build_win/
+dist/
+dist_linux/
+dist_win/
+
+# Downloaded release packages
+downloads/

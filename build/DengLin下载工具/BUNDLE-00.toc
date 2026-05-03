@@ -1,3 +1,0 @@
-([('DengLin下载工具',
-   '/Users/baiyunjun/Documents/AI实验/byjdldownloader/byjdldownlower/dist/DengLin下载工具',
-   'EXECUTABLE')],)
