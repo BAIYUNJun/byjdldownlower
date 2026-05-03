@@ -1,7 +1,6 @@
 """向导主窗口：QStackedWidget 管理四个页面切换"""
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -11,9 +10,11 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from downloader.ui.components import SidebarStepItem
 from downloader.ui.config_page import ConfigPage
 from downloader.ui.download_page import DownloadPage
 from downloader.ui.mode_selection_page import ModeSelectionPage
+from downloader.ui.theme import Colors, font
 from downloader.ui.welcome_page import WelcomePage
 
 
@@ -32,25 +33,19 @@ class WizardWindow(QWidget):
 
     def _setup_ui(self):
         self.setWindowTitle("登临部署包下载工具V0.1")
-        self.setMinimumSize(700, 560)
-        self.resize(700, 560)
+        self.setMinimumSize(860, 600)
+        self.resize(940, 640)
 
-        main_layout = QVBoxLayout(self)
+        main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # 步骤指示器
-        self._step_bar = self._create_step_bar()
-        main_layout.addWidget(self._step_bar)
-
-        # 分隔线
-        line = QFrame()
-        line.setFrameShape(QFrame.Shape.HLine)
-        line.setStyleSheet("background-color: #DDDDDD; max-height: 1px;")
-        main_layout.addWidget(line)
+        self.sidebar = self._create_sidebar()
+        main_layout.addWidget(self.sidebar)
 
         # 页面堆栈
         self.stack = QStackedWidget()
+        self.stack.setStyleSheet(f"background-color: {Colors.PAGE_BG};")
         main_layout.addWidget(self.stack, 1)
 
         # 创建四个页面
@@ -75,74 +70,99 @@ class WizardWindow(QWidget):
         # 初始状态
         self._update_steps(0)
 
-    def _create_step_bar(self) -> QWidget:
-        """创建步骤指示器"""
-        bar = QWidget()
-        bar.setFixedHeight(50)
-        bar.setStyleSheet("background-color: #F8F8F8;")
+    def _create_sidebar(self) -> QWidget:
+        """创建品牌侧边栏"""
+        sidebar = QWidget()
+        sidebar.setFixedWidth(236)
+        sidebar.setStyleSheet(f"background-color: {Colors.SIDEBAR};")
 
-        layout = QHBoxLayout(bar)
-        layout.setContentsMargins(40, 0, 40, 0)
+        layout = QVBoxLayout(sidebar)
+        layout.setContentsMargins(24, 28, 24, 22)
+        layout.setSpacing(0)
 
-        self._step_labels: list[QLabel] = []
-        steps = ["欢迎", "配置", "选择模式", "下载"]
-        for i, name in enumerate(steps):
-            step_widget = QWidget()
-            step_layout = QVBoxLayout(step_widget)
-            step_layout.setSpacing(2)
-            step_layout.setContentsMargins(0, 4, 0, 4)
-            step_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        brand_label = QLabel("DengLin")
+        brand_label.setFont(font(20))
+        brand_label.setStyleSheet(f"color: {Colors.SURFACE};")
+        layout.addWidget(brand_label)
 
-            circle = QLabel(str(i + 1))
-            circle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            circle.setFixedSize(28, 28)
-            circle.setFont(QFont("Microsoft YaHei", 11, QFont.Weight.Bold))
-            circle.setStyleSheet("""
-                background-color: #DDDDDD;
-                color: #888888;
-                border-radius: 14px;
-            """)
-            step_layout.addWidget(circle, 0, Qt.AlignmentFlag.AlignHCenter)
+        app_name_label = QLabel("部署包下载工具")
+        app_name_label.setFont(font(10))
+        app_name_label.setStyleSheet(f"color: {Colors.SIDEBAR_MUTED};")
+        layout.addWidget(app_name_label)
 
-            label = QLabel(name)
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            label.setFont(QFont("Microsoft YaHei", 10))
-            label.setStyleSheet("color: #888888;")
-            step_layout.addWidget(label, 0, Qt.AlignmentFlag.AlignHCenter)
+        version_label = QLabel("V0.1")
+        version_label.setFont(font(9))
+        version_label.setStyleSheet(f"color: {Colors.SIDEBAR_MUTED};")
+        layout.addWidget(version_label)
 
-            layout.addWidget(step_widget, 1)
-            self._step_labels.append(circle)
+        divider = QFrame()
+        divider.setFrameShape(QFrame.Shape.HLine)
+        divider.setFixedHeight(1)
+        divider.setStyleSheet(f"background-color: {Colors.SIDEBAR_CARD};")
+        layout.addSpacing(22)
+        layout.addWidget(divider)
+        layout.addSpacing(22)
 
-            if i < len(steps) - 1:
-                connector = QFrame()
-                connector.setFrameShape(QFrame.Shape.HLine)
-                connector.setFixedHeight(2)
-                connector.setStyleSheet("background-color: #DDDDDD;")
-                layout.addWidget(connector, 1)
+        self._sidebar_steps: list[SidebarStepItem] = []
+        for number, title in enumerate(
+            ["连接服务器", "发布配置", "选择内容", "下载任务"], start=1
+        ):
+            step_item = SidebarStepItem(number, title)
+            self._sidebar_steps.append(step_item)
+            layout.addWidget(step_item)
+            layout.addSpacing(16)
 
-        return bar
+        layout.addStretch(1)
+
+        summary_title = QLabel("当前任务")
+        summary_title.setFont(font(10))
+        summary_title.setStyleSheet(f"color: {Colors.SIDEBAR_MUTED};")
+        layout.addWidget(summary_title)
+
+        self._sidebar_summary = QLabel()
+        self._sidebar_summary.setFont(font(10))
+        self._sidebar_summary.setWordWrap(True)
+        self._sidebar_summary.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
+        )
+        self._sidebar_summary.setStyleSheet(
+            f"color: {Colors.SURFACE}; line-height: 150%;"
+        )
+        layout.addSpacing(8)
+        layout.addWidget(self._sidebar_summary)
+
+        return sidebar
 
     def _update_steps(self, current: int):
         """更新步骤指示器状态"""
-        for i, circle in enumerate(self._step_labels):
+        for i, step_item in enumerate(self._sidebar_steps):
             if i < current:
-                circle.setStyleSheet("""
-                    background-color: #4A90D9;
-                    color: white;
-                    border-radius: 14px;
-                """)
+                step_item.set_state("done")
             elif i == current:
-                circle.setStyleSheet("""
-                    background-color: #4A90D9;
-                    color: white;
-                    border-radius: 14px;
-                """)
+                step_item.set_state("current")
             else:
-                circle.setStyleSheet("""
-                    background-color: #DDDDDD;
-                    color: #888888;
-                    border-radius: 14px;
-                """)
+                step_item.set_state("pending")
+        self._update_sidebar_summary(current)
+
+    def _update_sidebar_summary(self, current: int):
+        """更新侧边栏当前任务摘要"""
+        if current == 0:
+            summary = "等待连接服务器"
+        elif current == 1:
+            summary = f"账号: {self._username or '-'}"
+        elif current == 2:
+            version = self._selected_version or "-"
+            if self._release_type == "custom":
+                summary = f"定制发布\n版本: {version}"
+            else:
+                arch = self._selected_arch or "-"
+                os_name = self._selected_os or "-"
+                summary = f"标准发布\n{arch} / {os_name} / {version}"
+        elif current == 3:
+            summary = "准备下载所选文件"
+        else:
+            summary = ""
+        self._sidebar_summary.setText(summary)
 
     def _go_to_welcome(self):
         self.stack.setCurrentIndex(0)
