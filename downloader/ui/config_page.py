@@ -3,101 +3,27 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QComboBox,
-    QHBoxLayout,
     QLabel,
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QHBoxLayout,
     QVBoxLayout,
     QWidget,
 )
 
 from downloader.config import OS_OPTIONS
+from downloader.ui.components import (
+    FooterActions,
+    PageHeader,
+    SegmentedControl,
+    SelectionCardButton,
+)
+from downloader.ui.theme import Colors, button_style, font, input_style
 from downloader.workers import FetchCustomFoldersWorker, FetchVersionsWorker
-
-
-class ArchCardButton(QPushButton):
-    """架构选择卡片按钮"""
-
-    def __init__(self, label: str, desc: str, parent=None):
-        super().__init__(parent)
-        self.label = label
-        self.desc = desc
-        self.setFixedSize(200, 80)
-        self.setCheckable(True)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.toggled.connect(self._update_style)
-        self._update_style()
-
-    def _update_style(self):
-        if self.isChecked():
-            self.setStyleSheet("""
-                QPushButton {
-                    background-color: #E8F0FE;
-                    border: 2px solid #4A90D9;
-                    border-radius: 8px;
-                    text-align: center;
-                }
-            """)
-        else:
-            self.setStyleSheet("""
-                QPushButton {
-                    background-color: #F8F8F8;
-                    border: 2px solid #DDDDDD;
-                    border-radius: 8px;
-                    text-align: center;
-                }
-                QPushButton:hover {
-                    border-color: #AAAAAA;
-                }
-            """)
-
-    def setChecked(self, checked: bool):
-        super().setChecked(checked)
-        self._update_style()
-
-
-class OsCardButton(QPushButton):
-    """操作系统选择卡片按钮"""
-
-    def __init__(self, label: str, desc: str, parent=None):
-        super().__init__(parent)
-        self.setFixedSize(140, 60)
-        self.setCheckable(True)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.toggled.connect(self._update_style)
-        self._update_style()
-
-    def _update_style(self):
-        if self.isChecked():
-            self.setStyleSheet("""
-                QPushButton {
-                    background-color: #E8F0FE;
-                    border: 2px solid #4A90D9;
-                    border-radius: 8px;
-                    text-align: center;
-                }
-            """)
-        else:
-            self.setStyleSheet("""
-                QPushButton {
-                    background-color: #F8F8F8;
-                    border: 2px solid #DDDDDD;
-                    border-radius: 8px;
-                    text-align: center;
-                }
-                QPushButton:hover {
-                    border-color: #AAAAAA;
-                }
-            """)
-
-    def setChecked(self, checked: bool):
-        super().setChecked(checked)
-        self._update_style()
 
 
 class ConfigPage(QWidget):
@@ -113,15 +39,17 @@ class ConfigPage(QWidget):
         self._fetch_custom_worker: FetchCustomFoldersWorker | None = None
         self._username = ""
         self._password = ""
-        self._os_btns: dict[str, OsCardButton] = {}
+        self._os_btns: dict[str, SelectionCardButton] = {}
         self._release_type = "standard"
         self._has_custom_folders: bool | None = None  # None=未检测, False=无, True=有
         self._setup_ui()
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
-        layout.setContentsMargins(50, 20, 50, 20)
+        layout.setSpacing(20)
+        layout.setContentsMargins(44, 34, 44, 28)
+
+        layout.addWidget(PageHeader("发布配置", "选择发布类型、目标平台和版本来源"))
 
         # 使用 ScrollArea 包裹内容，防止窗口过小时遮挡
         scroll = QScrollArea()
@@ -131,53 +59,28 @@ class ConfigPage(QWidget):
 
         content = QWidget()
         content_layout = QVBoxLayout(content)
-        content_layout.setSpacing(10)
+        content_layout.setSpacing(20)
         content_layout.setContentsMargins(0, 0, 0, 0)
 
         # === 发布类型切换（初始隐藏，检测到有定制文件夹后才显示） ===
         self._release_container = QWidget()
         release_outer = QVBoxLayout(self._release_container)
         release_outer.setContentsMargins(0, 0, 0, 0)
-        release_outer.setSpacing(6)
+        release_outer.setSpacing(8)
 
         release_title = QLabel("发布类型")
-        release_title.setFont(QFont("Microsoft YaHei", 12, QFont.Weight.Bold))
+        release_title.setFont(font(12))
+        release_title.setStyleSheet(f"color: {Colors.TEXT};")
         release_outer.addWidget(release_title)
 
-        release_layout = QHBoxLayout()
-        release_layout.setSpacing(12)
-
-        self._release_group = QButtonGroup(self)
-        self._release_btns: dict[str, QPushButton] = {}
-        for key, label in [("standard", "标准发布"), ("custom", "定制发布")]:
-            btn = QPushButton(label)
-            btn.setFixedSize(140, 40)
-            btn.setFont(QFont("Microsoft YaHei", 11))
-            btn.setCheckable(True)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #F8F8F8;
-                    border: 2px solid #DDDDDD;
-                    border-radius: 8px;
-                    color: #333333;
-                }
-                QPushButton:hover {
-                    border-color: #AAAAAA;
-                }
-                QPushButton:checked {
-                    background-color: #E8F0FE;
-                    border: 2px solid #4A90D9;
-                    color: #4A90D9;
-                }
-            """)
+        self._release_segment = SegmentedControl(
+            [("standard", "标准发布"), ("custom", "定制发布")]
+        )
+        self._release_group = self._release_segment.group
+        self._release_btns: dict[str, QPushButton] = self._release_segment.buttons
+        for key, btn in self._release_btns.items():
             btn.clicked.connect(lambda checked, k=key: self._on_release_type_changed(k))
-            self._release_group.addButton(btn)
-            self._release_btns[key] = btn
-            release_layout.addWidget(btn)
-
-        release_layout.addStretch(1)
-        release_outer.addLayout(release_layout)
+        release_outer.addWidget(self._release_segment)
 
         self._release_container.setVisible(False)  # 初始隐藏
         content_layout.addWidget(self._release_container)
@@ -186,22 +89,21 @@ class ConfigPage(QWidget):
         self._arch_container = QWidget()
         arch_outer = QVBoxLayout(self._arch_container)
         arch_outer.setContentsMargins(0, 0, 0, 0)
-        arch_outer.setSpacing(6)
+        arch_outer.setSpacing(8)
 
         arch_title = QLabel("请选择 CPU 架构")
-        arch_title.setFont(QFont("Microsoft YaHei", 12, QFont.Weight.Bold))
+        arch_title.setFont(font(12))
+        arch_title.setStyleSheet(f"color: {Colors.TEXT};")
         arch_outer.addWidget(arch_title)
 
         arch_layout = QHBoxLayout()
-        arch_layout.setSpacing(16)
+        arch_layout.setSpacing(12)
 
-        self.x86_btn = ArchCardButton("x86_64", "Intel / AMD 64位")
-        self.x86_btn.setText("x86_64\nIntel / AMD 64位")
-        self.x86_btn.setFont(QFont("Microsoft YaHei", 10))
+        self.x86_btn = SelectionCardButton("x86_64", "Intel / AMD 64位")
+        self.x86_btn.setMinimumWidth(200)
 
-        self.arm64_btn = ArchCardButton("arm64", "ARM 64位")
-        self.arm64_btn.setText("arm64\nARM 64位 (aarch64)")
-        self.arm64_btn.setFont(QFont("Microsoft YaHei", 10))
+        self.arm64_btn = SelectionCardButton("arm64", "ARM 64位 (aarch64)")
+        self.arm64_btn.setMinimumWidth(200)
 
         self._arch_group = QButtonGroup(self)
         self._arch_group.addButton(self.x86_btn)
@@ -219,10 +121,11 @@ class ConfigPage(QWidget):
         self._os_container = QWidget()
         os_outer = QVBoxLayout(self._os_container)
         os_outer.setContentsMargins(0, 0, 0, 0)
-        os_outer.setSpacing(6)
+        os_outer.setSpacing(8)
 
         os_title = QLabel("请选择操作系统")
-        os_title.setFont(QFont("Microsoft YaHei", 12, QFont.Weight.Bold))
+        os_title.setFont(font(12))
+        os_title.setStyleSheet(f"color: {Colors.TEXT};")
         os_outer.addWidget(os_title)
 
         os_layout = QHBoxLayout()
@@ -230,9 +133,8 @@ class ConfigPage(QWidget):
 
         self._os_group = QButtonGroup(self)
         for os_info in OS_OPTIONS:
-            btn = OsCardButton(os_info["label"], os_info["desc"])
-            btn.setText(f"{os_info['label']}\n{os_info['desc']}")
-            btn.setFont(QFont("Microsoft YaHei", 10))
+            btn = SelectionCardButton(os_info["label"], os_info["desc"])
+            btn.setMinimumWidth(140)
             self._os_group.addButton(btn)
             self._os_btns[os_info["key"]] = btn
             os_layout.addWidget(btn)
@@ -244,13 +146,16 @@ class ConfigPage(QWidget):
 
         # === 版本选择 ===
         ver_title = QLabel("选择 SDK 版本")
-        ver_title.setFont(QFont("Microsoft YaHei", 12, QFont.Weight.Bold))
+        ver_title.setFont(font(12))
+        ver_title.setStyleSheet(f"color: {Colors.TEXT};")
         content_layout.addWidget(ver_title)
 
         ver_layout = QHBoxLayout()
+        ver_layout.setSpacing(12)
         self.version_combo = QComboBox()
-        self.version_combo.setFont(QFont("Microsoft YaHei", 11))
-        self.version_combo.setMinimumHeight(32)
+        self.version_combo.setFont(font(10))
+        self.version_combo.setMinimumHeight(38)
+        self.version_combo.setStyleSheet(input_style())
         self.version_combo.setEnabled(False)
         try:
             self.version_combo.setPlaceholderText("请选择 SDK 版本...")
@@ -259,14 +164,17 @@ class ConfigPage(QWidget):
         ver_layout.addWidget(self.version_combo, 1)
 
         self.refresh_btn = QPushButton("刷新")
-        self.refresh_btn.setFixedSize(60, 32)
+        self.refresh_btn.setMinimumSize(74, 38)
+        self.refresh_btn.setFont(font(10))
+        self.refresh_btn.setStyleSheet(button_style("secondary"))
         self.refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.refresh_btn.clicked.connect(self._fetch_current_list)
         ver_layout.addWidget(self.refresh_btn)
         content_layout.addLayout(ver_layout)
 
         self.version_status = QLabel("")
-        self.version_status.setStyleSheet("color: #888888; font-size: 11px;")
+        self.version_status.setFont(font(10))
+        self.version_status.setStyleSheet(f"color: {Colors.TEXT_MUTED};")
         content_layout.addWidget(self.version_status)
 
         content_layout.addStretch(1)
@@ -275,46 +183,15 @@ class ConfigPage(QWidget):
         layout.addWidget(scroll, 1)
 
         # === 底部按钮 ===
-        btn_layout = QHBoxLayout()
-
-        self.back_btn = QPushButton("上一步")
-        self.back_btn.setFixedSize(120, 36)
-        self.back_btn.setFont(QFont("Microsoft YaHei", 11))
-        self.back_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #F0F0F0;
-                border: 1px solid #CCCCCC;
-                border-radius: 6px;
-            }
-            QPushButton:hover { background-color: #E0E0E0; }
-        """)
-        self.back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        footer = FooterActions()
+        self.back_btn = footer.back_btn
         self.back_btn.clicked.connect(self.back_clicked.emit)
-
-        self.next_btn = QPushButton("下一步")
-        self.next_btn.setFixedSize(120, 36)
-        self.next_btn.setFont(QFont("Microsoft YaHei", 11))
-        self.next_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4A90D9;
-                color: white;
-                border: none;
-                border-radius: 6px;
-            }
-            QPushButton:hover { background-color: #3A7BC8; }
-            QPushButton:pressed { background-color: #2E6AB5; }
-        """)
-        self.next_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.next_btn = footer.next_btn
         self.next_btn.clicked.connect(self._on_next)
-
-        btn_layout.addStretch(1)
-        btn_layout.addWidget(self.back_btn)
-        btn_layout.addSpacing(12)
-        btn_layout.addWidget(self.next_btn)
-        layout.addLayout(btn_layout)
+        layout.addWidget(footer)
 
         # 默认选中标准发布
-        self._release_btns["standard"].setChecked(True)
+        self._release_segment.set_checked("standard")
 
     def _on_release_type_changed(self, release_type: str):
         """发布类型切换"""
@@ -380,6 +257,7 @@ class ConfigPage(QWidget):
         self.version_combo.setEnabled(False)
         self.version_status.setText("正在获取版本列表...")
         self.refresh_btn.setEnabled(False)
+        self.next_btn.setEnabled(False)
 
         self._fetch_worker = FetchVersionsWorker(self._username, self._password)
         self._fetch_worker.success.connect(self._on_versions_loaded)
@@ -392,6 +270,7 @@ class ConfigPage(QWidget):
         self.version_combo.setEnabled(False)
         self.version_status.setText("正在获取定制文件夹列表...")
         self.refresh_btn.setEnabled(False)
+        self.next_btn.setEnabled(False)
 
         self._fetch_custom_worker = FetchCustomFoldersWorker(self._username, self._password)
         self._fetch_custom_worker.success.connect(self._on_custom_folders_loaded)
@@ -401,27 +280,41 @@ class ConfigPage(QWidget):
     def _on_versions_loaded(self, versions: list[str]):
         self._versions = versions
         self.version_combo.clear()
-        self.version_combo.addItems(versions)
-        self.version_combo.setEnabled(True)
-        self.version_status.setText(f"找到 {len(versions)} 个版本（最新: {versions[0]}）")
+        has_versions = len(versions) > 0
+        if has_versions:
+            self.version_combo.addItems(versions)
+            self.version_combo.setCurrentIndex(0)
+            self.version_status.setText(f"找到 {len(versions)} 个版本（最新: {versions[0]}）")
+        else:
+            self.version_status.setText("未找到可用版本")
+        self.version_combo.setEnabled(has_versions)
+        self.next_btn.setEnabled(has_versions)
         self.refresh_btn.setEnabled(True)
 
     def _on_versions_error(self, msg: str):
         self.version_status.setText(f"获取失败: {msg}")
         self.refresh_btn.setEnabled(True)
+        self.next_btn.setEnabled(False)
         QMessageBox.warning(self, "获取版本失败", msg)
 
     def _on_custom_folders_loaded(self, folders: list[str]):
         self._versions = folders
         self.version_combo.clear()
-        self.version_combo.addItems(folders)
-        self.version_combo.setEnabled(True)
-        self.version_status.setText(f"找到 {len(folders)} 个定制文件夹")
+        has_folders = len(folders) > 0
+        if has_folders:
+            self.version_combo.addItems(folders)
+            self.version_combo.setCurrentIndex(0)
+            self.version_status.setText(f"找到 {len(folders)} 个定制文件夹")
+        else:
+            self.version_status.setText("未找到定制文件夹")
+        self.version_combo.setEnabled(has_folders)
+        self.next_btn.setEnabled(has_folders)
         self.refresh_btn.setEnabled(True)
 
     def _on_custom_folders_error(self, msg: str):
         self.version_status.setText(f"获取失败: {msg}")
         self.refresh_btn.setEnabled(True)
+        self.next_btn.setEnabled(False)
         QMessageBox.warning(self, "获取定制文件夹失败", msg)
 
     def _get_selected_os(self) -> str:
