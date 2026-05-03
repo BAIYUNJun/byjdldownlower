@@ -43,7 +43,10 @@
       "Bash(rtk pip *)",
       "Bash(python -m PyInstaller \"build_win/登临部署包下载工具.spec\" --clean -y --distpath ./dist_win --workpath ./build_win)",
       "Bash(python -m PyInstaller \"build_win/登临部署包下载工具.spec\" --clean -y --distpath \"C:/Users/denglinAI/tmp/dist_win\" --workpath \"C:/Users/denglinAI/tmp/build_win\")",
-      "Bash(rtk git *)"
+      "Bash(rtk git *)",
+      "Bash(python3 -m py_compile dl_cli.py)",
+      "Bash(PYTHONPATH=. python3 dl_cli.py --help)",
+      "Bash(chmod +x dl_cli.py)"
     ],
     "additionalDirectories": [
       "C:\\Users\\denglinAI\\tmp"
