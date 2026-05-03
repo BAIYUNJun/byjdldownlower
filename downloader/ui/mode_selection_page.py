@@ -42,6 +42,8 @@ class ModeSelectionPage(QWidget):
         self._sdk_linked: set[str] = {"cuda11"}
         self._auto_updating = False
         self._fetch_custom_worker: FetchCustomFilesWorker | None = None
+        self._custom_files_request_id = 0
+        self._custom_file_workers: list[FetchCustomFilesWorker] = []
         self._setup_ui()
 
     def _setup_ui(self):
@@ -233,20 +235,54 @@ class ModeSelectionPage(QWidget):
         # 清除旧的动态 checkbox
         self._clear_custom_checkboxes()
         self._custom_status.setText("正在获取文件列表...")
+        self._custom_files_request_id += 1
+        request_id = self._custom_files_request_id
 
         # 后台获取定制文件夹中的文件
-        self._fetch_custom_worker = FetchCustomFilesWorker(
+        worker = FetchCustomFilesWorker(
             self._username, self._password, self._version
         )
-        self._fetch_custom_worker.success.connect(self._on_custom_files_loaded)
-        self._fetch_custom_worker.error.connect(self._on_custom_files_error)
-        self._fetch_custom_worker.start()
+        self._fetch_custom_worker = worker
+        self._custom_file_workers.append(worker)
+        worker.success.connect(
+            lambda files, rid=request_id: self._handle_custom_files_loaded(rid, files)
+        )
+        worker.error.connect(
+            lambda msg, rid=request_id: self._handle_custom_files_error(rid, msg)
+        )
+        worker.finished.connect(lambda w=worker: self._remove_custom_file_worker(w))
+        worker.start()
+
+    def _remove_custom_file_worker(self, worker: FetchCustomFilesWorker):
+        """Release a completed custom file worker without touching active workers."""
+        if worker in self._custom_file_workers:
+            self._custom_file_workers.remove(worker)
+        if self._fetch_custom_worker is worker:
+            self._fetch_custom_worker = (
+                self._custom_file_workers[-1] if self._custom_file_workers else None
+            )
+
+    def _is_current_custom_request(self, request_id: int) -> bool:
+        return (
+            request_id == self._custom_files_request_id
+            and self._release_type == "custom"
+        )
+
+    def _handle_custom_files_loaded(self, request_id: int, files: list[str]):
+        if self._is_current_custom_request(request_id):
+            self._on_custom_files_loaded(files)
+
+    def _handle_custom_files_error(self, request_id: int, msg: str):
+        if self._is_current_custom_request(request_id):
+            self._on_custom_files_error(msg)
 
     def _clear_custom_checkboxes(self):
-        """清除动态生成的文件 checkbox"""
-        for cb in self._custom_file_cbs:
-            self._custom_content_layout.removeWidget(cb)
-            cb.deleteLater()
+        """清除动态生成的文件 checkbox 和尾部 spacer"""
+        while self._custom_content_layout.count():
+            item = self._custom_content_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
         self._custom_file_cbs.clear()
 
     def _on_custom_files_loaded(self, files: list[str]):
