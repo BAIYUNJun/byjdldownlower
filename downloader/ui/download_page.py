@@ -249,6 +249,7 @@ class DownloadPage(QWidget):
     def _reset_state(self):
         self._matches = {}
         self._all_files = []
+        self._clear_file_list()
         self.overall_progress.setValue(0)
         self.file_progress.setValue(0)
         self.current_file_label.setText("当前文件: -")
